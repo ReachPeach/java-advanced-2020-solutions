@@ -8,6 +8,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -20,10 +21,9 @@ public class StudentDB implements AdvancedStudentGroupQuery {
 
     @Override
     public String getMostPopularName(Collection<Student> students) {
-        return groupStudentByAttribute(students, getFullName).entrySet().stream()
-                .max(Comparator.comparing((Map.Entry<String, List<Student>> entry) ->
-                        entry.getValue().stream().map(Student::getGroup).distinct().count())
-                        .thenComparing(Map.Entry::getKey)).map(Map.Entry::getKey).orElse(EMPTY_STRING);
+        return (students.stream().collect(Collectors.groupingBy(getFullName, Collectors.counting()))).entrySet()
+                .stream().max(Comparator.comparingLong((ToLongFunction<Map.Entry<String, Long>>) Map.Entry::getValue).
+                        thenComparing(Map.Entry::getKey)).map(Map.Entry::getKey).orElse(EMPTY_STRING);
     }
 
     @Override
@@ -126,10 +126,6 @@ public class StudentDB implements AdvancedStudentGroupQuery {
     @Override
     public List<String> getFullNames(Collection<Student> students, int[] indices) {
         return getMappedList(getEntryList(students.toArray(), indices), (student -> getFullName.apply((Student) student)));
-    }
-
-    private <E> Map<E, List<Student>> groupStudentByAttribute(final Collection<Student> students, final Function<Student, E> function) {
-        return students.stream().collect(Collectors.groupingBy(function));
     }
 
     private Stream<Object> getEntryList(Object[] students, int[] indices) {
