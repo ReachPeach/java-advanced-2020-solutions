@@ -5,10 +5,7 @@ import info.kgeorgiy.java.advanced.student.Group;
 import info.kgeorgiy.java.advanced.student.Student;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.function.ToLongFunction;
+import java.util.function.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -155,7 +152,7 @@ public class StudentDB implements AdvancedStudentGroupQuery {
                 .collect(Collectors.toList());
     }
 
-    private String getLargestSortedGroup(Collection<Student> students, Function<List<Student>, Integer> sizeComparator) {
+    private String getLargestSortedGroup(Collection<Student> students, Function<List<Student>, Integer> sizeFunction) {
         return getGroupedStream(students, HashMap::new).map((Map.Entry<String, List<Student>> entry) -> Map.entry(
                 entry.getKey(), sizeFunction.apply(entry.getValue()))).max(Comparator.comparingInt(
                 (ToIntFunction<Map.Entry<String, Integer>>) Map.Entry::getValue).thenComparing(Map.Entry::getKey,
