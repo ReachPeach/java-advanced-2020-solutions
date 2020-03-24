@@ -14,66 +14,66 @@ import java.util.stream.Stream;
 
 public class StudentDB implements AdvancedStudentGroupQuery {
     private final String EMPTY_STRING = "";
-    private final Comparator<Student> comparatorByName = Comparator.comparing(Student::getLastName)
+    private final Comparator<Student> COMPARATOR_BY_NAME = Comparator.comparing(Student::getLastName)
             .thenComparing(Student::getFirstName).thenComparing(Student::compareTo);
-    private final Function<Student, String> getFullName = student -> student.getFirstName() + " " + student.getLastName();
-    private final Function<Student, String> getFirstName = Student::getFirstName;
+    private final Function<Student, String> GET_FULL_NAME = student -> student.getFirstName() + " " + student.getLastName();
+    private final Function<Student, String> GET_FIRST_NAME = Student::getFirstName;
 
     @Override
     public String getMostPopularName(Collection<Student> students) {
-        return (students.stream().collect(Collectors.groupingBy(getFullName, Collectors.counting()))).entrySet()
+        return (students.stream().collect(Collectors.groupingBy(GET_FULL_NAME, Collectors.counting()))).entrySet()
                 .stream().max(Comparator.comparingLong((ToLongFunction<Map.Entry<String, Long>>) Map.Entry::getValue).
                         thenComparing(Map.Entry::getKey)).map(Map.Entry::getKey).orElse(EMPTY_STRING);
     }
 
     @Override
     public List<Group> getGroupsByName(Collection<Student> students) {
-        return getGroupsByCriteria(students, comparatorByName);
+        return getGroupsByCriterion(students, COMPARATOR_BY_NAME);
     }
 
     @Override
     public List<Group> getGroupsById(Collection<Student> students) {
-        return getGroupsByCriteria(students, Student::compareTo);
+        return getGroupsByCriterion(students, Student::compareTo);
     }
 
     @Override
     public String getLargestGroup(Collection<Student> students) {
-        return getLargestGroupBuCriteria(students, List::size);
+        return getLargestGroupByCriterion(students, List::size);
     }
 
     @Override
     public String getLargestGroupFirstName(Collection<Student> students) {
-        return getLargestGroupBuCriteria(students, list -> getDistinctFirstNames(list).size());
+        return getLargestGroupByCriterion(students, list -> getDistinctFirstNames(list).size());
     }
 
     @Override
     public List<String> getFirstNames(List<Student> students) {
-        return getAnyStudentsList(students, getFirstName);
+        return getStudentsData(students, GET_FIRST_NAME);
     }
 
     @Override
     public List<String> getLastNames(List<Student> students) {
-        return getAnyStudentsList(students, Student::getLastName);
+        return getStudentsData(students, Student::getLastName);
     }
 
     @Override
     public List<String> getGroups(List<Student> students) {
-        return getAnyStudentsList(students, Student::getGroup);
+        return getStudentsData(students, Student::getGroup);
     }
 
     @Override
     public List<String> getFullNames(List<Student> students) {
-        return getAnyStudentsList(students, getFullName);
+        return getStudentsData(students, GET_FULL_NAME);
     }
 
     @Override
     public Set<String> getDistinctFirstNames(List<Student> students) {
-        return students.stream().map(getFirstName).collect(Collectors.toCollection(TreeSet::new));
+        return students.stream().map(GET_FIRST_NAME).collect(Collectors.toCollection(TreeSet::new));
     }
 
     @Override
     public String getMinStudentFirstName(List<Student> students) {
-        return students.stream().min(Student::compareTo).map(getFirstName).orElse(EMPTY_STRING);
+        return students.stream().min(Student::compareTo).map(GET_FIRST_NAME).orElse(EMPTY_STRING);
     }
 
     @Override
@@ -83,22 +83,22 @@ public class StudentDB implements AdvancedStudentGroupQuery {
 
     @Override
     public List<Student> sortStudentsByName(Collection<Student> students) {
-        return getSortedList(students, comparatorByName);
+        return getSortedList(students, COMPARATOR_BY_NAME);
     }
 
     @Override
     public List<Student> findStudentsByFirstName(Collection<Student> students, String name) {
-        return findStudentsByCriteria(students, student -> student.getFirstName().equals(name));
+        return findFilteredListOrderedByName(students, student -> student.getFirstName().equals(name));
     }
 
     @Override
     public List<Student> findStudentsByLastName(Collection<Student> students, String name) {
-        return findStudentsByCriteria(students, student -> student.getLastName().equals(name));
+        return findFilteredListOrderedByName(students, student -> student.getLastName().equals(name));
     }
 
     @Override
     public List<Student> findStudentsByGroup(Collection<Student> students, String group) {
-        return findStudentsByCriteria(students, student -> student.getGroup().equals(group));
+        return findFilteredListOrderedByName(students, student -> student.getGroup().equals(group));
     }
 
     @Override
@@ -125,7 +125,7 @@ public class StudentDB implements AdvancedStudentGroupQuery {
 
     @Override
     public List<String> getFullNames(Collection<Student> students, int[] indices) {
-        return getMappedList(getEntryList(students.toArray(), indices), (student -> getFullName.apply((Student) student)));
+        return getMappedList(getEntryList(students.toArray(), indices), (student -> GET_FULL_NAME.apply((Student) student)));
     }
 
     private Stream<Object> getEntryList(Object[] students, int[] indices) {
@@ -140,7 +140,7 @@ public class StudentDB implements AdvancedStudentGroupQuery {
         return students.stream().sorted(comparator).collect(Collectors.toList());
     }
 
-    private List<String> getAnyStudentsList(Collection<Student> students, Function<Student, String> function) {
+    private List<String> getStudentsData(Collection<Student> students, Function<Student, String> function) {
         return students.stream().map(function).collect(Collectors.toList());
     }
 
@@ -149,20 +149,20 @@ public class StudentDB implements AdvancedStudentGroupQuery {
                 .entrySet().stream();
     }
 
-    private List<Group> getGroupsByCriteria(Collection<Student> students, Comparator<Student> comparator) {
+    private List<Group> getGroupsByCriterion(Collection<Student> students, Comparator<Student> comparator) {
         return getGroupedStream(students, TreeMap::new).map(student -> new Group(student.getKey(),
                 student.getValue().stream().sorted(comparator).collect(Collectors.toList())))
                 .collect(Collectors.toList());
     }
 
-    private String getLargestGroupBuCriteria(Collection<Student> students, Function<List<Student>, Integer> sizeComparator) {
+    private String getLargestGroupByCriterion(Collection<Student> students, Function<List<Student>, Integer> sizeComparator) {
         return getGroupedStream(students, HashMap::new)
                 .max(Comparator.comparingInt((Map.Entry<String, List<Student>> group) -> sizeComparator.
                         apply(group.getValue())).thenComparing(Map.Entry::getKey, Collections.reverseOrder
                         (String::compareTo))).map(Map.Entry::getKey).orElse(EMPTY_STRING);
     }
 
-    private List<Student> findStudentsByCriteria(Collection<Student> students, Predicate<Student> predicate) {
-        return students.stream().filter(predicate).sorted(comparatorByName).collect(Collectors.toList());
+    private List<Student> findFilteredListOrderedByName(Collection<Student> students, Predicate<Student> predicate) {
+        return students.stream().filter(predicate).sorted(COMPARATOR_BY_NAME).collect(Collectors.toList());
     }
 }
