@@ -28,22 +28,22 @@ public class StudentDB implements AdvancedStudentGroupQuery {
 
     @Override
     public List<Group> getGroupsByName(Collection<Student> students) {
-        return getGroupsByCriterion(students, COMPARATOR_BY_NAME);
+        return getSortedGroups(students, COMPARATOR_BY_NAME);
     }
 
     @Override
     public List<Group> getGroupsById(Collection<Student> students) {
-        return getGroupsByCriterion(students, Student::compareTo);
+        return getSortedGroups(students, Student::compareTo);
     }
 
     @Override
     public String getLargestGroup(Collection<Student> students) {
-        return getLargestGroupByCriterion(students, List::size);
+        return getLargestSortedGroup(students, List::size);
     }
 
     @Override
     public String getLargestGroupFirstName(Collection<Student> students) {
-        return getLargestGroupByCriterion(students, list -> getDistinctFirstNames(list).size());
+        return getLargestSortedGroup(students, list -> getDistinctFirstNames(list).size());
     }
 
     @Override
@@ -149,13 +149,13 @@ public class StudentDB implements AdvancedStudentGroupQuery {
                 .entrySet().stream();
     }
 
-    private List<Group> getGroupsByCriterion(Collection<Student> students, Comparator<Student> comparator) {
+    private List<Group> getSortedGroups(Collection<Student> students, Comparator<Student> comparator) {
         return getGroupedStream(students, TreeMap::new).map(student -> new Group(student.getKey(),
                 student.getValue().stream().sorted(comparator).collect(Collectors.toList())))
                 .collect(Collectors.toList());
     }
 
-    private String getLargestGroupByCriterion(Collection<Student> students, Function<List<Student>, Integer> sizeComparator) {
+    private String getLargestSortedGroup(Collection<Student> students, Function<List<Student>, Integer> sizeComparator) {
         return getGroupedStream(students, HashMap::new)
                 .max(Comparator.comparingInt((Map.Entry<String, List<Student>> group) -> sizeComparator.
                         apply(group.getValue())).thenComparing(Map.Entry::getKey, Collections.reverseOrder
