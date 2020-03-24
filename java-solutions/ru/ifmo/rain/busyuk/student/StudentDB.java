@@ -155,11 +155,11 @@ public class StudentDB implements AdvancedStudentGroupQuery {
                 .collect(Collectors.toList());
     }
 
-    private String getLargestSortedGroup    (Collection<Student> students, Function<List<Student>, Integer> sizeComparator) {
-        return getGroupedStream(students, HashMap::new)
-                .max(Comparator.comparingInt((Map.Entry<String, List<Student>> group) -> sizeComparator.
-                        apply(group.getValue())).thenComparing(Map.Entry::getKey, Collections.reverseOrder
-                        (String::compareTo))).map(Map.Entry::getKey).orElse(EMPTY_STRING);
+    private String getLargestSortedGroup(Collection<Student> students, Function<List<Student>, Integer> sizeComparator) {
+        return getGroupedStream(students, HashMap::new).map((Map.Entry<String, List<Student>> entry) -> Map.entry(
+                entry.getKey(), sizeFunction.apply(entry.getValue()))).max(Comparator.comparingInt(
+                (ToIntFunction<Map.Entry<String, Integer>>) Map.Entry::getValue).thenComparing(Map.Entry::getKey,
+                Collections.reverseOrder(String::compareTo))).map(Map.Entry::getKey).orElse(EMPTY_STRING);
     }
 
     private List<Student> findFilteredListOrderedByName(Collection<Student> students, Predicate<Student> predicate) {
