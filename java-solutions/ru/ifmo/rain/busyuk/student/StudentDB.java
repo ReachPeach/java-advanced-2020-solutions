@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 
 public class StudentDB implements AdvancedStudentGroupQuery {
     private final String EMPTY_STRING = "";
-    private final Comparator<Student> COMPARATOR_BY_NAME = Comparator.comparing(Student::getLastName)
+    private final Comparator<Student> NAME_ID_COMPARATOR = Comparator.comparing(Student::getLastName)
             .thenComparing(Student::getFirstName).thenComparing(Student::compareTo);
     private final Function<Student, String> GET_FULL_NAME = student -> student.getFirstName() + " " + student.getLastName();
     private final Function<Student, String> GET_FIRST_NAME = Student::getFirstName;
@@ -28,7 +28,7 @@ public class StudentDB implements AdvancedStudentGroupQuery {
 
     @Override
     public List<Group> getGroupsByName(Collection<Student> students) {
-        return getSortedGroups(students, COMPARATOR_BY_NAME);
+        return getSortedGroups(students, NAME_ID_COMPARATOR);
     }
 
     @Override
@@ -83,7 +83,7 @@ public class StudentDB implements AdvancedStudentGroupQuery {
 
     @Override
     public List<Student> sortStudentsByName(Collection<Student> students) {
-        return getSortedList(students, COMPARATOR_BY_NAME);
+        return getSortedList(students, NAME_ID_COMPARATOR);
     }
 
     @Override
@@ -155,7 +155,7 @@ public class StudentDB implements AdvancedStudentGroupQuery {
                 .collect(Collectors.toList());
     }
 
-    private String getLargestSortedGroup(Collection<Student> students, Function<List<Student>, Integer> sizeComparator) {
+    private String getLargestSortedGroup    (Collection<Student> students, Function<List<Student>, Integer> sizeComparator) {
         return getGroupedStream(students, HashMap::new)
                 .max(Comparator.comparingInt((Map.Entry<String, List<Student>> group) -> sizeComparator.
                         apply(group.getValue())).thenComparing(Map.Entry::getKey, Collections.reverseOrder
@@ -163,6 +163,6 @@ public class StudentDB implements AdvancedStudentGroupQuery {
     }
 
     private List<Student> findFilteredListOrderedByName(Collection<Student> students, Predicate<Student> predicate) {
-        return students.stream().filter(predicate).sorted(COMPARATOR_BY_NAME).collect(Collectors.toList());
+        return students.stream().filter(predicate).sorted(NAME_ID_COMPARATOR).collect(Collectors.toList());
     }
 }
