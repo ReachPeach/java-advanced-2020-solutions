@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impler {
-    private static final String TAB_SPACE = "    ";
+    private static final String TAB_SPACE = "\t"
 
     @Override
     public void implement(Class<?> token, Path root) throws ImplerException {
