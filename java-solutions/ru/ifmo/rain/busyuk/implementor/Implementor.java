@@ -1,4 +1,4 @@
-package ru.ifmo.rain.busyuk.implementor;
+package ru.ifmo.rain.busyuk.jarImplementor;
 
 import info.kgeorgiy.java.advanced.implementor.ImplerException;
 
@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -23,22 +24,18 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
         if (!token.isInterface()) {
             throw new ImplerException("Not Interface class token in args");
         }
-
-        Path folderPath = root.resolve(token.getPackage() == null ? "" :
-                token.getPackage().getName().replace('.', File.separatorChar));
+        Path folderPath = root.resolve(getPackagePath(token));
         Path filePath = folderPath.resolve(token.getSimpleName() + "Impl.java");
-
         try {
             Files.createDirectories(folderPath);
         } catch (IOException e) {
             throw new ImplerException("Problems with creating directory" + e.getMessage(), e);
         }
 
-        try (BufferedWriter writer = Files.newBufferedWriter(filePath)) {
-
-            writer.write(generatePackage(token));
-            writer.write(generateTitle(token));
-            writer.write(" {" + System.lineSeparator());
+        try (BufferedWriter writer = Files.newBufferedWriter(filePath, StandardCharsets.UTF_8)) {
+            writer.write(toUnicode(generatePackage(token)));
+            writer.write(toUnicode(generateTitle(token)));
+            writer.write(toUnicode(" {" + System.lineSeparator()));
 
             for (Method method : token.getMethods()) {
                 if (method.isDefault()) continue;
@@ -50,16 +47,20 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
                 if (Modifier.isTransient(modifiers)) {
                     modifiers -= Modifier.TRANSIENT;
                 }
-                writer.write(generateAnnotations(method));
-                writer.write(generateModifiers(modifiers, method));
-                writer.write(generateArguments(method));
-                writer.write(generateExceptions(method));
-                writer.write(generateInnerCode(method));
+                writer.write(toUnicode(generateAnnotations(method)));
+                writer.write(toUnicode(generateModifiers(modifiers, method)));
+                writer.write(toUnicode(generateArguments(method)));
+                writer.write(toUnicode(generateExceptions(method)));
+                writer.write(toUnicode(generateInnerCode(method)));
             }
             writer.write("}");
         } catch (IOException e) {
             throw new ImplerException("Problems with output" + e.getMessage(), e);
         }
+    }
+
+    protected Path getPackagePath(final Class<?> token) {
+        return Path.of(token.getPackageName().replace(".", File.separator));
     }
 
     private String generatePackage(Class<?> token) {
@@ -125,5 +126,17 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
         }
         returnValue.append(';');
         return returnValue.toString();
+    }
+
+    private static String toUnicode(String in) {
+        StringBuilder res = new StringBuilder();
+        for (char c : in.toCharArray()) {
+            if (c >= 128) {
+                res.append(String.format("\\u%04X", (int) c));
+            } else {
+                res.append(c);
+            }
+        }
+        return res.toString();
     }
 }
