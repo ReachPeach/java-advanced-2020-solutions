@@ -33,9 +33,9 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
         }
 
         try (BufferedWriter writer = Files.newBufferedWriter(filePath, StandardCharsets.UTF_8)) {
-            writer.write(toUnicode(generatePackage(token)));
-            writer.write(toUnicode(generateTitle(token)));
-            writer.write(toUnicode(" {" + System.lineSeparator()));
+            writer.write(escapeUnicode(generatePackage(token)));
+            writer.write(escapeUnicode(generateTitle(token)));
+            writer.write(escapeUnicode(" {" + System.lineSeparator()));
 
             for (Method method : token.getMethods()) {
                 if (method.isDefault()) continue;
@@ -47,11 +47,11 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
                 if (Modifier.isTransient(modifiers)) {
                     modifiers -= Modifier.TRANSIENT;
                 }
-                writer.write(toUnicode(generateAnnotations(method)));
-                writer.write(toUnicode(generateModifiers(modifiers, method)));
-                writer.write(toUnicode(generateArguments(method)));
-                writer.write(toUnicode(generateExceptions(method)));
-                writer.write(toUnicode(generateInnerCode(method)));
+                writer.write(escapeUnicode(generateAnnotations(method)));
+                writer.write(escapeUnicode(generateModifiers(modifiers, method)));
+                writer.write(escapeUnicode(generateArguments(method)));
+                writer.write(escapeUnicode(generateExceptions(method)));
+                writer.write(escapeUnicode(generateInnerCode(method)));
             }
             writer.write("}");
         } catch (IOException e) {
@@ -128,7 +128,7 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
         return returnValue.toString();
     }
 
-    private static String toUnicode(String in) {
+    private static String escapeUnicode(String in) {
         StringBuilder res = new StringBuilder();
         for (char c : in.toCharArray()) {
             if (c >= 128) {
