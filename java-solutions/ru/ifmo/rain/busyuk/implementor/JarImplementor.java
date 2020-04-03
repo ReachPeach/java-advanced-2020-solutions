@@ -21,36 +21,39 @@ public class JarImplementor extends Implementor implements info.kgeorgiy.java.ad
 
     @Override
     public void implementJar(Class<?> token, Path jarFile) throws ImplerException {
+        Path rootTemp;
         try {
-            Path rootTemp = Files.createTempDirectory(".");
-            JarImplementor implementor = new JarImplementor();
-            implementor.implement(token, rootTemp);
-
-            Path packageRoot = rootTemp.resolve(getPackagePath(token));
-            File sourceFile = packageRoot.resolve(token.getSimpleName() + "Impl.java").toFile();
-            Path classFilePath = packageRoot.resolve(token.getSimpleName() + "Impl.class");
-
-            JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-            String classpath = getTokenClasspath(token);
-            compiler.run(null, null, null, "-cp", classpath, sourceFile.toString());
-
-            Manifest manifest = new Manifest();
-            manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-            try {
-                Files.createDirectories(jarFile.getParent());
-            } catch (IOException e) {
-                throw new ImplerException("Cannot create output directories ", e);
-            }
-            try (JarOutputStream jos = new JarOutputStream(new FileOutputStream(jarFile.toFile()), manifest)) {
-                String entryName = toJarEntryName(getPackagePath(token).resolve(token.getSimpleName() + "Impl.class"));
-                jos.putNextEntry(new JarEntry(entryName));
-                Files.copy(classFilePath, jos);
-                jos.closeEntry();
-            } catch (IOException e) {
-                throw new ImplerException("Cannot create jar-file", e);
-            }
+            rootTemp = Files.createTempDirectory(".");
         } catch (IOException e) {
-            throw new ImplerException("Problems with output: " + e.getMessage(), e);
+            throw new ImplerException("Problems with creating directory " + e.getMessage(), e);
+        }
+        JarImplementor implementor = new JarImplementor();
+        implementor.implement(token, rootTemp);
+
+        Path packageRoot = rootTemp.resolve(getPackagePath(token));
+        File sourceFile = packageRoot.resolve(token.getSimpleName() + "Impl.java").toFile();
+        Path classFilePath = packageRoot.resolve(token.getSimpleName() + "Impl.class");
+
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        String classpath = getTokenClasspath(token);
+        if (compiler.run(null, null, null, "-cp", classpath, sourceFile.toString()) != 0) {
+            throw new ImplerException("Problems with compiling");
+        }
+
+        Manifest manifest = new Manifest();
+        manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+        try {
+            Files.createDirectories(jarFile.getParent());
+        } catch (IOException e) {
+            throw new ImplerException("Cannot create output directories ", e);
+        }
+        try (JarOutputStream jos = new JarOutputStream(new FileOutputStream(jarFile.toFile()), manifest)) {
+            String entryName = toJarEntryName(getPackagePath(token).resolve(token.getSimpleName() + "Impl.class"));
+            jos.putNextEntry(new JarEntry(entryName));
+            Files.copy(classFilePath, jos);
+            jos.closeEntry();
+        } catch (IOException e) {
+            throw new ImplerException("Problems with output" + e.getMessage(), e);
         }
     }
 
@@ -65,6 +68,7 @@ public class JarImplementor extends Implementor implements info.kgeorgiy.java.ad
     private String toJarEntryName(final Path filepath) {
         return filepath.toString().replace(File.separator, "/");
     }
+
 
     public static void main(String[] args) {
         try {
