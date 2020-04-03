@@ -1,4 +1,4 @@
-package ru.ifmo.rain.busyuk.jarImplementor;
+package ru.ifmo.rain.busyuk.implementor;
 
 import info.kgeorgiy.java.advanced.implementor.ImplerException;
 
