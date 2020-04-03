@@ -10,7 +10,9 @@ import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impler {
@@ -33,9 +35,10 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
         }
 
         try (BufferedWriter writer = Files.newBufferedWriter(filePath, StandardCharsets.UTF_8)) {
-            writer.write(escapeUnicode(generatePackage(token)));
-            writer.write(escapeUnicode(generateTitle(token)));
-            writer.write(escapeUnicode(" {" + System.lineSeparator()));
+            List<String> data = new ArrayList<>();
+            data.add(toUnicode(generatePackage(token)));
+            data.add(toUnicode(generateTitle(token)));
+            data.add(toUnicode(" {" + System.lineSeparator()));
 
             for (Method method : token.getMethods()) {
                 if (method.isDefault()) continue;
@@ -47,13 +50,16 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
                 if (Modifier.isTransient(modifiers)) {
                     modifiers -= Modifier.TRANSIENT;
                 }
-                writer.write(escapeUnicode(generateAnnotations(method)));
-                writer.write(escapeUnicode(generateModifiers(modifiers, method)));
-                writer.write(escapeUnicode(generateArguments(method)));
-                writer.write(escapeUnicode(generateExceptions(method)));
-                writer.write(escapeUnicode(generateInnerCode(method)));
+                data.add(toUnicode(generateAnnotations(method)));
+                data.add(toUnicode(generateModifiers(modifiers, method)));
+                data.add(toUnicode(generateArguments(method)));
+                data.add(toUnicode(generateExceptions(method)));
+                data.add(toUnicode(generateInnerCode(method)));
             }
-            writer.write("}");
+            data.add("}");
+            for (String line : data) {
+                writer.write(line);
+            }
         } catch (IOException e) {
             throw new ImplerException("Problems with output" + e.getMessage(), e);
         }
@@ -128,7 +134,7 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
         return returnValue.toString();
     }
 
-    private static String escapeUnicode(String in) {
+    private static String toUnicode(String in) {
         StringBuilder res = new StringBuilder();
         for (char c : in.toCharArray()) {
             if (c >= 128) {
