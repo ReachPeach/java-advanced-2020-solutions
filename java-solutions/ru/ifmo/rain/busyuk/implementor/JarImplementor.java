@@ -14,8 +14,13 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 
+/**
+ * Implements specified base token and produces jar file with result.
+ */
 public class JarImplementor extends Implementor implements info.kgeorgiy.java.advanced.implementor.JarImpler {
-
+    /**
+     * Creates new instance of {@link JarImplementor}
+     */
     public JarImplementor() {
     }
 
@@ -57,6 +62,12 @@ public class JarImplementor extends Implementor implements info.kgeorgiy.java.ad
         }
     }
 
+    /**
+     * Returns token`s classpath.
+     *
+     * @param token {@link Class} object.
+     * @return {@link String} representing token`s classpath.
+     */
     private String getTokenClasspath(final Class<?> token) {
         try {
             return Path.of(token.getProtectionDomain().getCodeSource().getLocation().toURI()).toString();
@@ -65,11 +76,23 @@ public class JarImplementor extends Implementor implements info.kgeorgiy.java.ad
         }
     }
 
-    private String toJarEntryName(final Path filepath) {
+    /**
+     * Converts path to string with correct filepath related to jar.
+     *
+     * @param filepath {@link Path} current token`s filepath.
+     * @return {@link String} filepath with correct jar separators.
+     */
+    private String toJarEntryName(Path filepath) {
         return filepath.toString().replace(File.separator, "/");
     }
 
-
+    /**
+     * Generates implementation for specified command line arguments. Required
+     * arguments are {@code classname} and {@code output file}. Usage:
+     * {@code -jar <classname> <output file>}
+     *
+     * @param args three command line arguments for running an application.
+     */
     public static void main(String[] args) {
         try {
             if (args == null || args.length != 3 || !"-jar".equals(args[0])) {
