@@ -1,11 +1,6 @@
-cd ../../../../../../
+set artifactsPath="../../../../../../../java-advanced-2020/artifacts"
+set inKgeorgiyJarClassPath="info/kgeorgiy/java/advanced/implementor"
+set jarClassPath="ru/ifmo/rain/busyuk/implementor"
 
-set res_out=./java-solutions/ru/ifmo/rain/busyuk/implementor/_build
-set classpath=../java-advanced-2020/modules/info.kgeorgiy.java.advanced.implementor
-set modulepath=../java-advanced-2020/lib/
-set sourcepath=./java-solutions/ru/ifmo/rain/busyuk/implementor/*.java
-
-javac -d %res_out% -cp %classpath% -p %modulepath% %sourcepath%
-
-cd ./java-solutions/ru/ifmo/rain/busyuk/implementor/_build || exit
-jar -cf ../_implementor.jar	./ru
+javac -d ./ ../Implementor.java ../JarImplementor.java
+jar cf ../_implemetor.jar %jarClassPath%/Implementor.class %jarClassPath%/JarImplementor.class %inKgeorgiyJarClassPath%/Impler.class %inKgeorgiyJarClassPath%/JarImpler.class %inKgeorgiyJarClassPath%/ImplerException.class
