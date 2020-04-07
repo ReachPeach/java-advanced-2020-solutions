@@ -22,7 +22,7 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
     /**
      * Tab space for generated classes.
      */
-    private static final String TAB_SPACE = "\t";
+    private static final String TAB = "\t";
 
     @Override
     public void implement(Class<?> token, Path root) throws ImplerException {
@@ -41,10 +41,10 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
         }
 
         try (BufferedWriter writer = Files.newBufferedWriter(filePath, StandardCharsets.UTF_8)) {
-            List<String> data = new ArrayList<>();
-            data.add(generatePackage(token));
-            data.add(generateTitle(token));
-            data.add(" {" + System.lineSeparator());
+            List<String> code = new ArrayList<>();
+            code.add(generatePackage(token));
+            code.add(generateTitle(token));
+            code.add(" {" + System.lineSeparator());
 
             for (Method method : token.getMethods()) {
                 if (method.isDefault()) continue;
@@ -56,14 +56,14 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
                 if (Modifier.isTransient(modifiers)) {
                     modifiers -= Modifier.TRANSIENT;
                 }
-                data.add(generateAnnotations(method));
-                data.add(generateModifiers(modifiers, method));
-                data.add(generateArguments(method));
-                data.add(generateExceptions(method));
-                data.add(generateInnerCode(method));
+                code.add(generateAnnotations(method));
+                code.add(generateModifiers(modifiers, method));
+                code.add(generateArguments(method));
+                code.add(generateExceptions(method));
+                code.add(generateInnerCode(method));
             }
-            data.add("}");
-            for (String line : data) {
+            code.add("}");
+            for (String line : code) {
                 writer.write(escapeUnicode(line));
             }
         } catch (IOException e) {
@@ -140,7 +140,7 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
      * @return {@link String} representing list of modifiers for method.
      */
     private String generateModifiers(int modifiers, Method method) {
-        return (System.lineSeparator() + TAB_SPACE + Modifier.toString(modifiers) + " " +
+        return (System.lineSeparator() + TAB + Modifier.toString(modifiers) + " " +
                 method.getReturnType().getCanonicalName() + " " + method.getName());
     }
 
@@ -175,7 +175,7 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
     private String generateInnerCode(Method method) {
         StringBuilder innerCode = new StringBuilder(" {" + System.lineSeparator());
         if (method.getReturnType() != void.class) innerCode.append(generateReturn(method.getReturnType()));
-        innerCode.append(System.lineSeparator()).append(TAB_SPACE).append('}').append(System.lineSeparator());
+        innerCode.append(System.lineSeparator()).append(TAB).append('}').append(System.lineSeparator());
         return innerCode.toString();
     }
 
@@ -186,7 +186,7 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
      * @return {@link String} representing method`s default return value.
      */
     private String generateReturn(Class<?> returnType) {
-        StringBuilder returnValue = new StringBuilder(TAB_SPACE + TAB_SPACE + "return ");
+        StringBuilder returnValue = new StringBuilder(TAB + TAB + "return ");
         if (returnType == boolean.class) {
             returnValue.append("false");
         } else {

@@ -7,5 +7,5 @@ set sourcepath=./java-solutions/ru/ifmo/rain/busyuk/implementor/*.java
 
 javac -d %res_out% -cp %classpath% -p %modulepath% %sourcepath%
 
-cd ../java-solutions/ru/ifmo/rain/busyuk/implementor/_build || exit
+cd ./java-solutions/ru/ifmo/rain/busyuk/implementor/_build || exit
 jar -cf ../_implementor.jar	./ru
