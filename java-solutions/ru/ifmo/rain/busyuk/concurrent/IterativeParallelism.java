@@ -7,18 +7,18 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurrent.AdvancedIP {
-    private int threadCount, capacity, remaining;
+    private int threadCount, blockCapacity, remaining;
     private List<Thread> threads;
 
     @Override
     public <T> T maximum(int threads, List<? extends T> values, Comparator<? super T> comparator) throws InterruptedException {
-        return perform(threads, values, stream -> stream.max(comparator).orElseThrow(),
-                stream -> stream.max(comparator).orElseThrow());
+        return minimum(threads, values, Collections.reverseOrder(comparator));
     }
 
     @Override
     public <T> T minimum(int threads, List<? extends T> values, Comparator<? super T> comparator) throws InterruptedException {
-        return maximum(threads, values, Collections.reverseOrder(comparator));
+        return perform(threads, values, stream -> stream.min(comparator).orElseThrow(),
+                stream -> stream.min(comparator).orElseThrow());
     }
 
     @Override
@@ -62,46 +62,53 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
         return reduce(threads, map(threads, values, lift), monoid);
     }
 
-    private <T, R> R perform(int threads, List<? extends T> values, Function<Stream<? extends T>, R> sourceApplier,
+    private <T, R> R perform(int threadProvidedCount, List<? extends T> values, Function<Stream<? extends T>, R> sourceApplier,
                              Function<Stream<R>, R> resultsApplier) throws InterruptedException {
-        precalcCapacity(threads, values);
-        List<R> threadsResults = new ArrayList<>(Collections.nCopies(threadCount, null));
-        fillTreads(threadsResults, values, sourceApplier);
-        joinTreads();
+        threadCount = Math.min(threadProvidedCount, values.size());
+        threads = new ArrayList<>();
+        blockCapacity = values.size() / threadCount;
+        remaining = values.size() - threadCount * blockCapacity;
+        List<R> threadsResults = new ArrayList<>();
+        for (int i = 0; i < threadCount; i++) threadsResults.add(null);
+        fillThreads(threadsResults, values, sourceApplier);
+        joinThreads();
         return resultsApplier.apply(threadsResults.stream());
     }
 
-    private <T> void precalcCapacity(int threadsProvidedCount, List<? extends T> values) {
-        Objects.requireNonNull(values);
-        threadCount = Math.min(threadsProvidedCount, values.size());
-        threads = new ArrayList<>();
-        capacity = values.size() / threadCount;
-        remaining = values.size() - threadCount * capacity;
-    }
-
-    private <T, R> void fillTreads(List<R> threadsResults, List<? extends T> values,
-                                   Function<Stream<? extends T>, R> sourceApplier) {
+    private <T, R> void fillThreads(List<R> threadsResults, List<? extends T> values,
+                                    Function<Stream<? extends T>, R> sourceApplier) {
         for (int i = 0, l, r = 0; i < threadCount; i++) {
             l = r;
-            r += capacity;
+            r += blockCapacity;
             if (remaining != 0) {
                 r++;
                 remaining--;
             }
-            fillTread(threadsResults, values.subList(l, r).stream(), sourceApplier, i);
+            if (l == r) break;
+            fillThread(threadsResults, values.subList(l, r).stream(), sourceApplier, i);
         }
     }
 
-    private <T, R> void fillTread(List<R> threadsResult, Stream<? extends T> values,
-                                  Function<Stream<? extends T>, R> sourceApplier, int index) {
+    private <T, R> void fillThread(List<R> threadsResult, Stream<? extends T> values,
+                                   Function<Stream<? extends T>, R> sourceApplier, int index) {
         Thread thread = new Thread(() -> threadsResult.set(index, sourceApplier.apply(values)));
         thread.start();
         threads.add(thread);
     }
 
-    private void joinTreads() throws InterruptedException {
+    private void joinThreads() throws InterruptedException {
+        List<InterruptedException> exceptions = new ArrayList<>();
         for (Thread thread : threads) {
-            thread.join();
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                exceptions.add(e);
+            }
+        }
+        if (!exceptions.isEmpty()) {
+            InterruptedException exception = exceptions.get(0);
+            exceptions.stream().skip(1).forEach(exception::addSuppressed);
+            throw exception;
         }
     }
 }
