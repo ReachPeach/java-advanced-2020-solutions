@@ -7,6 +7,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurrent.AdvancedIP {
+    private int threadCount, capacity, remaining;
+    private List<Thread> threads;
+
     @Override
     public <T> T maximum(int threads, List<? extends T> values, Comparator<? super T> comparator) throws InterruptedException {
         return perform(threads, values, stream -> stream.max(comparator).orElseThrow(),
@@ -59,12 +62,9 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
         return reduce(threads, map(threads, values, lift), monoid);
     }
 
-    private int threadCount, capacity, remaining;
-    private List<Thread> threads;
-
-    private <T, R> R perform(int threads, List<? extends T> values, Function<Stream<? extends T>, R> sourceApplier,
+    private <T, R> R perform(int threadsStartCount, List<? extends T> values, Function<Stream<? extends T>, R> sourceApplier,
                              Function<Stream<R>, R> resultsApplier) throws InterruptedException {
-        init(threads, values);
+        init(threadsStartCount, values);
         List<R> threadsResults = new ArrayList<>(Collections.nCopies(threadCount, null));
         fillTreads(threadsResults, values, sourceApplier);
         joinTreads();
@@ -74,7 +74,7 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
     private <T> void init(int threads, List<? extends T> values) {
         Objects.requireNonNull(values);
         threadCount = Math.min(threads, values.size());
-        this.threads = new ArrayList<>();
+        threads = new ArrayList<>();
         capacity = values.size() / threadCount;
         remaining = values.size() - threadCount * capacity;
     }
@@ -96,7 +96,7 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
                                   Function<Stream<? extends T>, R> sourceApplier, int index) {
         Thread thread = new Thread(() -> threadsResult.set(index, sourceApplier.apply(values)));
         thread.start();
-        this.threads.add(thread);
+        threads.add(thread);
     }
 
     private void joinTreads() throws InterruptedException {
