@@ -64,14 +64,14 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
 
     private <T, R> R perform(int threads, List<? extends T> values, Function<Stream<? extends T>, R> sourceApplier,
                              Function<Stream<R>, R> resultsApplier) throws InterruptedException {
-        init(threads, values);
+        precalcCapacity(threads, values);
         List<R> threadsResults = new ArrayList<>(Collections.nCopies(threadCount, null));
         fillTreads(threadsResults, values, sourceApplier);
         joinTreads();
         return resultsApplier.apply(threadsResults.stream());
     }
 
-    private <T> void init(int threadsProvidedCount, List<? extends T> values) {
+    private <T> void precalcCapacity(int threadsProvidedCount, List<? extends T> values) {
         Objects.requireNonNull(values);
         threadCount = Math.min(threadsProvidedCount, values.size());
         threads = new ArrayList<>();
