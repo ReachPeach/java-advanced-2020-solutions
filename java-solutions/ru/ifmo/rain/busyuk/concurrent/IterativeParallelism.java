@@ -67,9 +67,11 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
         threadCount = Math.min(threadProvidedCount, values.size());
         threads = new ArrayList<>();
         blockCapacity = values.size() / threadCount;
-        remaining = values.size() - threadCount * blockCapacity;
+        remaining = values.size() % threadCount;
         List<R> threadsResults = new ArrayList<>();
-        for (int i = 0; i < threadCount; i++) threadsResults.add(null);
+        for (int i = 0; i < threadCount; i++) {
+            threadsResults.add(null);
+        }
         fillThreads(threadsResults, values, sourceApplier);
         joinThreads();
         return resultsApplier.apply(threadsResults.stream());
