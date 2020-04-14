@@ -64,6 +64,7 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
         if (providedThreadCount <= 0 || values == null) {
             throw new IllegalArgumentException("provided 0 threads or empty values");
         }
+
         int threadCount = Math.min(providedThreadCount, values.size());
         List<Thread> threads = new ArrayList<>();
         int blockCapacity = values.size() / threadCount;
@@ -78,18 +79,13 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
                 remaining--;
             }
             if (l == r) break;
-            fillThread(threadsResults, values.subList(l, r).stream(), mapper, i, threads);
+            final int ind = i, left = l, right = r;
+            Thread thread = new Thread(() -> threadsResults.set(ind, mapper.apply(values.subList(left, right).stream())));
+            thread.start();
+            threads.add(thread);
         }
         joinThreads(threads);
         return reducer.apply(threadsResults.stream());
-    }
-
-
-    private <T, R> void fillThread(List<R> threadsResult, Stream<? extends T> values,
-                                   Function<Stream<? extends T>, R> sourceApplier, int index, List<Thread> threads) {
-        Thread thread = new Thread(() -> threadsResult.set(index, sourceApplier.apply(values)));
-        thread.start();
-        threads.add(thread);
     }
 
     private void joinThreads(List<Thread> threads) throws InterruptedException {
