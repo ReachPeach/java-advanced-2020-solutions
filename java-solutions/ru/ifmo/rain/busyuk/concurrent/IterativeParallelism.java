@@ -62,7 +62,7 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
     private <T, R> R mapReduce(int providedThreadCount, List<? extends T> values, Function<Stream<? extends T>, R> mapper,
                                Function<Stream<R>, R> reducer) throws InterruptedException {
         if (providedThreadCount <= 0 || values == null) {
-            throw new IllegalArgumentException("provided 0 threads or emphty values");
+            throw new IllegalArgumentException("provided 0 threads or empty values");
         }
         int threadCount = Math.min(providedThreadCount, values.size());
         List<Thread> threads = new ArrayList<>();
