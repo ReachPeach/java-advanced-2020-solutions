@@ -59,6 +59,7 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
         return reduce(threads, map(threads, values, lift), monoid);
     }
 
+<<<<<<< HEAD
     private <T, R> R mapReduce(int providedThreadCount, List<? extends T> values, Function<Stream<? extends T>, R> mapper,
                                Function<Stream<R>, R> reducer) throws InterruptedException {
         if (providedThreadCount <= 0 || values == null) {
@@ -70,6 +71,25 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
         int remaining = values.size() % threadCount;
         List<R> threadsResults = new ArrayList<>();
         for (int i = 0; i < threadCount; i++) threadsResults.add(null);
+=======
+    private <T, R> R perform(int threadProvidedCount, List<? extends T> values, Function<Stream<? extends T>, R> sourceApplier,
+                             Function<Stream<R>, R> resultsApplier) throws InterruptedException {
+        threadCount = Math.min(threadProvidedCount, values.size());
+        threads = new ArrayList<>();
+        blockCapacity = values.size() / threadCount;
+        remaining = values.size() % threadCount;
+        List<R> threadsResults = new ArrayList<>();
+        for (int i = 0; i < threadCount; i++) {
+            threadsResults.add(null);
+        }
+        fillThreads(threadsResults, values, sourceApplier);
+        joinThreads();
+        return resultsApplier.apply(threadsResults.stream());
+    }
+
+    private <T, R> void fillThreads(List<R> threadsResults, List<? extends T> values,
+                                    Function<Stream<? extends T>, R> sourceApplier) {
+>>>>>>> 79cf3ae9bc2105a0d7beb545288108b55fcafbf6
         for (int i = 0, l, r = 0; i < threadCount; i++) {
             l = r;
             r += blockCapacity;
