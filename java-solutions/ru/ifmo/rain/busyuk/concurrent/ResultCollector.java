@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class ResultCollector <R>{
+public class ResultCollector<R> {
     private int done;
     private final int count;
     private final List<R> results;
@@ -25,7 +25,7 @@ public class ResultCollector <R>{
         }
     }
 
-    synchronized List<R> getResults() throws InterruptedException {
+    protected synchronized List<R> getResults() throws InterruptedException {
         while (done < count) {
             wait();
         }
