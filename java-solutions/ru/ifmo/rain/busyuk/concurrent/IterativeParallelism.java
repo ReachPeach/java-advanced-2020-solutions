@@ -1,5 +1,7 @@
 package ru.ifmo.rain.busyuk.concurrent;
 
+import info.kgeorgiy.java.advanced.mapper.ParallelMapper;
+
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -7,6 +9,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurrent.AdvancedIP {
+    private ParallelMapper parallelMapper;
+
+    public IterativeParallelism(ParallelMapper parallelMapper) {
+        this.parallelMapper = parallelMapper;
+    }
+
     @Override
     public <T> T maximum(int threads, List<? extends T> values, Comparator<? super T> comparator) throws InterruptedException {
         return minimum(threads, values, Collections.reverseOrder(comparator));
@@ -69,8 +77,9 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
         List<Thread> threads = new ArrayList<>();
         int blockCapacity = values.size() / threadCount;
         int remaining = values.size() % threadCount;
-        List<R> threadsResults = new ArrayList<>();
-        for (int i = 0; i < threadCount; i++) threadsResults.add(null);
+        List<R> threadResults;
+        List<Stream<? extends T>> splittedValues = new ArrayList<>();
+
         for (int i = 0, l, r = 0; i < threadCount; i++) {
             l = r;
             r += blockCapacity;
@@ -79,13 +88,22 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
                 remaining--;
             }
             if (l == r) break;
-            final int ind = i, left = l, right = r;
-            Thread thread = new Thread(() -> threadsResults.set(ind, mapper.apply(values.subList(left, right).stream())));
-            thread.start();
-            threads.add(thread);
+            splittedValues.add(values.subList(l, r).stream());
         }
-        joinThreads(threads);
-        return reducer.apply(threadsResults.stream());
+
+        if (parallelMapper == null) {
+            threadResults = new ArrayList<>(Collections.nCopies(threadCount, null));
+            for (int i = 0; i < splittedValues.size(); i++) {
+                final int index = i;
+                Thread thread = new Thread(() -> threadResults.set(index, mapper.apply(splittedValues.get(index))));
+                thread.start();
+                threads.add(thread);
+            }
+            joinThreads(threads);
+        } else {
+            threadResults = parallelMapper.map(mapper, splittedValues);
+        }
+        return reducer.apply(threadResults.stream());
     }
 
     private void joinThreads(List<Thread> threads) throws InterruptedException {
