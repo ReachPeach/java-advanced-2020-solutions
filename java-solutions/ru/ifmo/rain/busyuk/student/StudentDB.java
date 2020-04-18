@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 
 public class StudentDB implements AdvancedStudentGroupQuery {
     private final String EMPTY_STRING = "";
-    private final Comparator<Student> NAME_ID_COMPARATOR = Comparator.comparing(Student::getLastName)
+    private final Comparator<Student> NAMES_ID_COMPARATOR = Comparator.comparing(Student::getLastName)
             .thenComparing(Student::getFirstName).thenComparing(Student::compareTo);
     private final Function<Student, String> GET_FULL_NAME = student -> student.getFirstName() + " " + student.getLastName();
     private final Function<Student, String> GET_FIRST_NAME = Student::getFirstName;
@@ -25,7 +25,7 @@ public class StudentDB implements AdvancedStudentGroupQuery {
 
     @Override
     public List<Group> getGroupsByName(Collection<Student> students) {
-        return getSortedGroups(students, NAME_ID_COMPARATOR);
+        return getSortedGroups(students, NAMES_ID_COMPARATOR);
     }
 
     @Override
@@ -80,7 +80,7 @@ public class StudentDB implements AdvancedStudentGroupQuery {
 
     @Override
     public List<Student> sortStudentsByName(Collection<Student> students) {
-        return getSortedList(students, NAME_ID_COMPARATOR);
+        return getSortedList(students, NAMES_ID_COMPARATOR);
     }
 
     @Override
@@ -160,6 +160,6 @@ public class StudentDB implements AdvancedStudentGroupQuery {
     }
 
     private List<Student> findFilteredListOrderedByName(Collection<Student> students, Predicate<Student> predicate) {
-        return students.stream().filter(predicate).sorted(NAME_ID_COMPARATOR).collect(Collectors.toList());
+        return students.stream().filter(predicate).sorted(NAMES_ID_COMPARATOR).collect(Collectors.toList());
     }
 }
