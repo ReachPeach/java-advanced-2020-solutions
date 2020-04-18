@@ -5,22 +5,22 @@ import java.util.function.Function;
 
 public class ParallelMapperImpl implements info.kgeorgiy.java.advanced.mapper.ParallelMapper {
     private List<Thread> threads;
-    private final Queue<Runnable> consumers;
+    private final Queue<Runnable> tasks;
 
     public ParallelMapperImpl(int threadCount) {
-        consumers = new LinkedList<>();
+        tasks = new LinkedList<>();
         threads = new ArrayList<>();
         for (int i = 0; i < threadCount; i++) {
             threads.add(new Thread(() -> {
                 try {
                     while (!Thread.interrupted()) {
                         Runnable task;
-                        synchronized (consumers) {
-                            while (consumers.isEmpty()) {
-                                consumers.wait();
+                        synchronized (tasks) {
+                            while (tasks.isEmpty()) {
+                                tasks.wait();
                             }
-                            task = consumers.poll();
-                            consumers.notifyAll();
+                            task = tasks.poll();
+                            tasks.notifyAll();
                         }
                         task.run();
                     }
@@ -36,12 +36,12 @@ public class ParallelMapperImpl implements info.kgeorgiy.java.advanced.mapper.Pa
         ResultCollector<R> threadResults = new ResultCollector<>(args.size());
         for (int i = 0; i < args.size(); i++) {
             final int index = i;
-            synchronized (consumers) {
-                while (!consumers.isEmpty()) {
-                    consumers.wait();
+            synchronized (tasks) {
+                while (!tasks.isEmpty()) {
+                    tasks.wait();
                 }
-                consumers.add(() -> threadResults.set(index, f.apply(args.get(index))));
-                consumers.notify();
+                tasks.add(() -> threadResults.set(index, f.apply(args.get(index))));
+                tasks.notify();
             }
         }
         return threadResults.getResults();
