@@ -77,16 +77,12 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
         List<Thread> threads = new ArrayList<>();
         int blockCapacity = values.size() / threadCount;
         int remaining = values.size() % threadCount;
-<<<<<<< HEAD
         List<R> threadResults;
         List<Stream<? extends T>> splittedValues = new ArrayList<>();
-
-=======
         List<R> threadResults = new ArrayList<>();
         for (int i = 0; i < threadCount; i++) {
             threadResults.add(null);
         }
->>>>>>> 4b2481d6d057f9a87a94c7d2bc60c6ed5199ae29
         for (int i = 0, l, r = 0; i < threadCount; i++) {
             l = r;
             r += blockCapacity;
@@ -94,7 +90,6 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
                 r++;
                 remaining--;
             }
-<<<<<<< HEAD
             if (l == r) break;
             splittedValues.add(values.subList(l, r).stream());
         }
@@ -111,7 +106,6 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
         } else {
             threadResults = parallelMapper.map(mapper, splittedValues);
         }
-=======
             if (l == r) {
                 break;
             }
@@ -121,7 +115,6 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
             threads.add(thread);
         }
         joinThreads(threads);
->>>>>>> 4b2481d6d057f9a87a94c7d2bc60c6ed5199ae29
         return reducer.apply(threadResults.stream());
     }
 
