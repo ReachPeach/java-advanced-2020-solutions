@@ -11,6 +11,10 @@ import java.util.stream.Stream;
 public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurrent.AdvancedIP {
     private ParallelMapper parallelMapper;
 
+    public IterativeParallelism() {
+        parallelMapper = null;
+    }
+
     public IterativeParallelism(ParallelMapper parallelMapper) {
         this.parallelMapper = parallelMapper;
     }
@@ -67,22 +71,19 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
         return reduce(threads, map(threads, values, lift), monoid);
     }
 
-    private <T, R> R mapReduce(int threadCount, List<? extends T> values, Function<Stream<? extends T>, R> mapper,
+    private <T, R> R mapReduce(int providedThreadCount, List<? extends T> values, Function<Stream<? extends T>, R> mapper,
                                Function<Stream<R>, R> reducer) throws InterruptedException {
-        if (threadCount <= 0 || values == null) {
+        if (providedThreadCount <= 0 || values == null) {
             throw new IllegalArgumentException("provided 0 threads or empty values");
         }
 
-        threadCount = Math.min(threadCount, values.size());
+        int threadCount = Math.min(providedThreadCount, values.size());
         List<Thread> threads = new ArrayList<>();
         int blockCapacity = values.size() / threadCount;
         int remaining = values.size() % threadCount;
         List<R> threadResults;
         List<Stream<? extends T>> splittedValues = new ArrayList<>();
-        List<R> threadResults = new ArrayList<>();
-        for (int i = 0; i < threadCount; i++) {
-            threadResults.add(null);
-        }
+
         for (int i = 0, l, r = 0; i < threadCount; i++) {
             l = r;
             r += blockCapacity;
@@ -106,15 +107,6 @@ public class IterativeParallelism implements info.kgeorgiy.java.advanced.concurr
         } else {
             threadResults = parallelMapper.map(mapper, splittedValues);
         }
-            if (l == r) {
-                break;
-            }
-            final int index = i, left = l, right = r;
-            Thread thread = new Thread(() -> threadResults.set(index, mapper.apply(values.subList(left, right).stream())));
-            thread.start();
-            threads.add(thread);
-        }
-        joinThreads(threads);
         return reducer.apply(threadResults.stream());
     }
 

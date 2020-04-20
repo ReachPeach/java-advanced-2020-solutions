@@ -41,12 +41,10 @@ public class ArraySet<T> extends AbstractSet<T> implements NavigableSet<T> {
         return this.comparator;
     }
 
-
     @Override
     public int size() {
         return this.data.size();
     }
-
 
     @Override
     public T lower(T t) {
@@ -120,7 +118,6 @@ public class ArraySet<T> extends AbstractSet<T> implements NavigableSet<T> {
         return subSet(fromElement, inclusive, last(), true);
     }
 
-
     @Override
     public SortedSet<T> subSet(T fromElement, T toElement) {
         if (compare(fromElement, toElement) > 0) throw new IllegalArgumentException();
@@ -162,7 +159,6 @@ public class ArraySet<T> extends AbstractSet<T> implements NavigableSet<T> {
         }
     }
 
-
     private void checkCapacity() {
         if (data.isEmpty())
             throw new NoSuchElementException();
@@ -171,7 +167,6 @@ public class ArraySet<T> extends AbstractSet<T> implements NavigableSet<T> {
     private boolean checkIndex(int index) {
         return 0 <= index && index < data.size();
     }
-
 
     private int getIndex(T t, boolean inclusive, boolean up) {
         int index = Collections.binarySearch(data, t, comparator);
