@@ -5,14 +5,11 @@ import info.kgeorgiy.java.advanced.implementor.ImplerException;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -22,15 +19,15 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
     /**
      * Tab space for generated classes.
      */
-    private static final String TAB = "\t";
+    private static final String TAB_SPACE = "\t";
 
     @Override
     public void implement(Class<?> token, Path root) throws ImplerException {
         if (token == null || root == null) {
             throw new ImplerException("Null argument provided");
         }
-        if (!token.isInterface()) {
-            throw new ImplerException("Not Interface class token in args");
+        if (token.isPrimitive() || token.isArray() || Modifier.isFinal(token.getModifiers()) || token == Enum.class) {
+            throw new ImplerException("Incorrect type provided to implemet");
         }
         Path folderPath = root.resolve(getPackagePath(token));
         Path filePath = folderPath.resolve(token.getSimpleName() + "Impl.java");
@@ -41,12 +38,22 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
         }
 
         try (BufferedWriter writer = Files.newBufferedWriter(filePath, StandardCharsets.UTF_8)) {
-            List<String> code = new ArrayList<>();
-            code.add(generatePackage(token));
-            code.add(generateTitle(token));
-            code.add(" {" + System.lineSeparator());
+            List<String> data = new ArrayList<>();
+            data.add(generatePackage(token));
+            data.add(generateTitle(token));
+            data.add(" {" + System.lineSeparator());
 
-            for (Method method : token.getMethods()) {
+            if (!token.isInterface()) {
+                boolean found = false;
+                for (Constructor constructor : token.getDeclaredConstructors()) {
+                    found = found || generateConstructor(constructor, token, data);
+                }
+                if (!found) {
+                    throw new ImplerException("All constructors are private!");
+                }
+            }
+
+            for (Method method : generateAllMethods(token)) {
                 if (method.isDefault()) continue;
 
                 int modifiers = method.getModifiers();
@@ -56,14 +63,13 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
                 if (Modifier.isTransient(modifiers)) {
                     modifiers -= Modifier.TRANSIENT;
                 }
-                code.add(generateAnnotations(method));
-                code.add(generateModifiers(modifiers, method));
-                code.add(generateArguments(method));
-                code.add(generateExceptions(method));
-                code.add(generateInnerCode(method));
+                data.add(generateModifiers(modifiers, method));
+                data.add(generateArguments(method.getParameters()));
+                data.add(generateExceptions(method.getExceptionTypes()));
+                data.add(generateInnerCode(method));
             }
-            code.add("}");
-            for (String line : code) {
+            data.add("}");
+            for (String line : data) {
                 writer.write(escapeUnicode(line));
             }
         } catch (IOException e) {
@@ -93,6 +99,38 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
     }
 
     /**
+     * Returns {@link Boolean} weather it adds information about {@link Constructor} of token to {@link List} data
+     *
+     * @param constructor {@link Constructor} token`s constructor
+     * @param token       {@link Class} object
+     * @param data        {@link List} generated code collector
+     * @return true if constructor wasn`t private and code was added to data
+     */
+    private boolean generateConstructor(Constructor constructor, Class<?> token, List<String> data) {
+        if (Modifier.isPrivate(constructor.getModifiers())) {
+            return false;
+        }
+        StringBuilder result = new StringBuilder();
+        StringBuilder paramsOfConstructor = new StringBuilder();
+        for (int i = 0; i < constructor.getParameterCount(); i++) {
+            if (i == 0) {
+                paramsOfConstructor.append("X").append(i);
+            } else {
+                paramsOfConstructor.append(", " + "X").append(i);
+            }
+        }
+        result.append(TAB_SPACE + "public" + " ").append(token.getSimpleName()).append("Impl")
+                .append(generateArguments(constructor.getParameters()))
+                .append(generateExceptions(constructor.getExceptionTypes())).append(" ")
+                .append("{").append(System.lineSeparator());
+        result.append(TAB_SPACE + TAB_SPACE + "super" + "(")
+                .append(paramsOfConstructor).append(");").append(System.lineSeparator());
+        result.append(TAB_SPACE + "}").append(System.lineSeparator()).append(System.lineSeparator());
+        data.add(result.toString());
+        return true;
+    }
+
+    /**
      * Returns declaration of the class.
      *
      * @param token {@link Class} object
@@ -100,9 +138,10 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
      * @throws ImplerException if no implementation could be made.
      */
     private String generateTitle(Class<?> token) throws ImplerException {
-        String interfaceName = token.getCanonicalName();
-        String className = token.getSimpleName() + "Impl";
+        String className = token.getCanonicalName();
+        String implerName = token.getSimpleName() + "Impl";
         int mod = token.getModifiers();
+        String originClass = (token.isInterface() ? "implements" : "extends");
         if (Modifier.isAbstract(mod)) {
             mod -= Modifier.ABSTRACT;
         }
@@ -118,18 +157,64 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
         if (Modifier.isPrivate(mod)) {
             throw new ImplerException("Cannot implement private interfaces");
         }
-        return (String.format("%s class %s implements %s", Modifier.toString(mod), className, interfaceName));
+
+        return (String.format("%s class %s %s %s", Modifier.toString(mod), implerName, originClass, className));
     }
 
     /**
-     * Returns method`s annotations.
+     * Returns {@link List} of {@link Method} that token has or extends
      *
-     * @param method {@link Method} method.
-     * @return {@link String} representing list of annotations for method.
+     * @param token {@link Class} object
+     * @return all methods that provide given token
      */
-    private String generateAnnotations(Method method) {
-        return (Arrays.stream(method.getAnnotations()).map(annotation -> "@" + annotation.annotationType()
-                .getCanonicalName()).collect(Collectors.joining(System.lineSeparator())) + System.lineSeparator());
+    private List<Method> generateAllMethods(final Class<?> token) {
+        List<Class<?>> list = new ArrayList<>();
+        list.add(token);
+
+        Set<Class<?>> visited = new HashSet<>();
+
+        for (int i = 0; i < list.size(); i++) {
+            Class<?> current = list.get(i);
+            for (Class<?> interfaceToken : current.getInterfaces()) {
+                if (!visited.contains(interfaceToken)) {
+                    list.add(interfaceToken);
+                    visited.add(interfaceToken);
+                }
+            }
+
+            Class<?> base = current.getSuperclass();
+            if (base != null) {
+                list.add(base);
+                visited.add(base);
+            }
+        }
+
+        List<Method> result = new ArrayList<>();
+
+        for (final Class<?> current : list) {
+            Arrays.stream(current.getDeclaredMethods())
+                    .filter(method -> {
+                        int mod = method.getModifiers();
+                        return !Modifier.isPrivate(mod)
+                                && (Modifier.isPublic(mod)
+                                || Modifier.isProtected(mod)
+                                || method.getDeclaringClass().getPackage().equals(token.getPackage()));
+                    })
+                    .collect(Collectors.toCollection(() -> result));
+        }
+
+        Collection<Method> distinct = result.stream()
+                .collect(Collectors.toMap(
+                        method -> method.getName() + Arrays.toString(method.getParameterTypes()),
+                        method -> method,
+                        (lhs, rhs) -> lhs))
+                .values();
+
+        return distinct.stream()
+                .filter(method -> {
+                    int mod = method.getModifiers();
+                    return Modifier.isAbstract(mod);
+                }).collect(Collectors.toList());
     }
 
     /**
@@ -140,30 +225,41 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
      * @return {@link String} representing list of modifiers for method.
      */
     private String generateModifiers(int modifiers, Method method) {
-        return (System.lineSeparator() + TAB + Modifier.toString(modifiers) + " " +
+        return (System.lineSeparator() + TAB_SPACE + Modifier.toString(modifiers) + " " +
                 method.getReturnType().getCanonicalName() + " " + method.getName());
     }
 
     /**
      * Returns method`s arguments.
      *
-     * @param method {@link Method} current method.
+     * @param parameters {@link Parameter} current method.
      * @return {@link String} representing list of method`s arguments.
      */
-    private String generateArguments(Method method) {
-        return ('(' + Arrays.stream(method.getParameters()).map(parameter -> parameter.getType().getCanonicalName() +
-                " " + parameter.getName()).collect(Collectors.joining(", ")) + ')');
+    private String generateArguments(Parameter[] parameters) {
+        StringBuilder tmp = new StringBuilder("( ");
+        for (int i = 0; i < parameters.length; i++) {
+            tmp.append(parameters[i].getType().getCanonicalName()).append(" ").append("X")
+                    .append(i).append((i + 1 == parameters.length) ? "" : "," + " ");
+        }
+        tmp.append(" )");
+        return tmp.toString();
     }
 
     /**
      * Returns exceptions that method could throw.
      *
-     * @param method {@link Method} current method.
+     * @param exceptions {@link Method} current method.
      * @return {@link String} representing list of exceptions that could be.
      */
-    private String generateExceptions(Method method) {
-        return method.getExceptionTypes().length == 0 ? "" : ("throws " + Arrays.stream(method.getExceptionTypes()).
-                map(Class::getCanonicalName).collect(Collectors.joining(", ")));
+    private String generateExceptions(Class<?>[] exceptions) {
+        StringBuilder tmp = new StringBuilder();
+        if (exceptions.length > 0) {
+            tmp.append(" throws ");
+            for (int i = 0; i < exceptions.length; i++) {
+                tmp.append(exceptions[i].getCanonicalName()).append((i + 1 == exceptions.length ? "" : ", "));
+            }
+        }
+        return tmp.toString();
     }
 
     /**
@@ -175,7 +271,7 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
     private String generateInnerCode(Method method) {
         StringBuilder innerCode = new StringBuilder(" {" + System.lineSeparator());
         if (method.getReturnType() != void.class) innerCode.append(generateReturn(method.getReturnType()));
-        innerCode.append(System.lineSeparator()).append(TAB).append('}').append(System.lineSeparator());
+        innerCode.append(System.lineSeparator()).append(TAB_SPACE).append('}').append(System.lineSeparator());
         return innerCode.toString();
     }
 
@@ -186,7 +282,7 @@ public class Implementor implements info.kgeorgiy.java.advanced.implementor.Impl
      * @return {@link String} representing method`s default return value.
      */
     private String generateReturn(Class<?> returnType) {
-        StringBuilder returnValue = new StringBuilder(TAB + TAB + "return ");
+        StringBuilder returnValue = new StringBuilder(TAB_SPACE + TAB_SPACE + "return ");
         if (returnType == boolean.class) {
             returnValue.append("false");
         } else {

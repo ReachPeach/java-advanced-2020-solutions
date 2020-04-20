@@ -28,7 +28,7 @@ public class JarImplementor extends Implementor implements info.kgeorgiy.java.ad
     public void implementJar(Class<?> token, Path jarFile) throws ImplerException {
         Path rootTemp;
         try {
-            rootTemp = Files.createTempDirectory(".");
+            rootTemp = Files.createTempDirectory(jarFile.toAbsolutePath().getParent(), "temp");
         } catch (IOException e) {
             throw new ImplerException("Problems with creating directory " + e.getMessage(), e);
         }
