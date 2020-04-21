@@ -10,6 +10,7 @@ public class ParallelMapperImpl implements info.kgeorgiy.java.advanced.mapper.Pa
     public ParallelMapperImpl(int threadCount) {
         tasks = new LinkedList<>();
         threads = new ArrayList<>();
+        //test
         for (int i = 0; i < threadCount; i++) {
             threads.add(new Thread(() -> {
                 try {
