@@ -14,7 +14,7 @@ public class ParallelMapperImpl implements info.kgeorgiy.java.advanced.mapper.Pa
             threads.add(new Thread(() -> {
                 try {
                     while (!Thread.interrupted()) {
-                        Runnable task;
+                        final Runnable task;
                         synchronized (tasks) {
                             while (tasks.isEmpty()) {
                                 tasks.wait();
@@ -33,7 +33,7 @@ public class ParallelMapperImpl implements info.kgeorgiy.java.advanced.mapper.Pa
 
     @Override
     public <T, R> List<R> map(Function<? super T, ? extends R> f, List<? extends T> args) throws InterruptedException {
-        ResultCollector<R> threadResults = new ResultCollector<>(args.size());
+        final ResultCollector<R> threadResults = new ResultCollector<>(args.size());
         for (int i = 0; i < args.size(); i++) {
             final int index = i;
             synchronized (tasks) {
