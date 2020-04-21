@@ -9,7 +9,7 @@ public class ResultCollector<R> {
     private final int count;
     private final List<R> results;
 
-    ResultCollector(int size) {
+    protected ResultCollector(int size) {
         done = 0;
         count = size;
         results = new ArrayList<>(Collections.nCopies(size, null));
@@ -21,7 +21,6 @@ public class ResultCollector<R> {
         if (done >= count) {
             notify();
         }
-
     }
 
     protected synchronized List<R> getResults() throws InterruptedException {

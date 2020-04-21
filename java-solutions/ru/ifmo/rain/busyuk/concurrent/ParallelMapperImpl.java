@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.function.Function;
 
 public class ParallelMapperImpl implements info.kgeorgiy.java.advanced.mapper.ParallelMapper {
-    private List<Thread> threads;
+    private final List<Thread> threads;
     private final Queue<Runnable> tasks;
 
     public ParallelMapperImpl(int threadCount) {
