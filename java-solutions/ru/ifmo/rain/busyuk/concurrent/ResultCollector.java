@@ -15,14 +15,13 @@ public class ResultCollector<R> {
         results = new ArrayList<>(Collections.nCopies(size, null));
     }
 
-    protected void set(int pos, R result) {
+    protected synchronized void set(int pos, R result) {
         results.set(pos, result);
-        synchronized (this) {
-            done++;
-            if (done >= count) {
-                notify();
-            }
+        done++;
+        if (done >= count) {
+            notify();
         }
+
     }
 
     protected synchronized List<R> getResults() throws InterruptedException {
