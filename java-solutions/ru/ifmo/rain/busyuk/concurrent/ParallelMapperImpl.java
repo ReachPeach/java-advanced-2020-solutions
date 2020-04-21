@@ -37,9 +37,6 @@ public class ParallelMapperImpl implements info.kgeorgiy.java.advanced.mapper.Pa
         for (int i = 0; i < args.size(); i++) {
             final int index = i;
             synchronized (tasks) {
-                while (!tasks.isEmpty()) {
-                    tasks.wait();
-                }
                 tasks.add(() -> threadResults.set(index, f.apply(args.get(index))));
                 tasks.notifyAll();
             }
