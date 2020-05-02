@@ -20,8 +20,8 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
     private final int hostCount;
 
     private static class HostData {
-        AtomicInteger count = new AtomicInteger();
-        Queue<Runnable> tasks = new LinkedList<>();
+        private AtomicInteger count = new AtomicInteger();
+        private Queue<Runnable> tasks = new LinkedList<>();
     }
 
     public WebCrawler(Downloader downloader, int downloads, int extractors, int perHost) {
