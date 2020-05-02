@@ -58,7 +58,8 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
                         try {
                             if (remainingDepth > 0) {
                                 for (String link : downloaded.extractLinks()) {
-                                    downloadRec(link, remainingDepth - 1, phaser, visitedPages, pagesWithExceptions);
+                                    downloadRec(link, remainingDepth - 1,
+                                            phaser, visitedPages, pagesWithExceptions);
                                 }
                             }
                         } catch (IOException e) {
