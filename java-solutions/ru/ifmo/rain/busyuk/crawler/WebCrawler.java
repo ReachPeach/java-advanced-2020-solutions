@@ -32,24 +32,24 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
         this.hostCount = perHost;
     }
 
-    private Optional<String> getHost(String url, Map<String, IOException> exceptions) {
+    private Optional<String> getHost(String url, Map<String, IOException> pagesWithExceptions) {
         Optional<String> result = Optional.empty();
         try {
             result = Optional.of(URLUtils.getHost(url));
         } catch (MalformedURLException e) {
-            exceptions.put(url, e);
+            pagesWithExceptions.put(url, e);
         }
         return result;
     }
 
     private void downloadRec(String url, int remainingDepth, Phaser phaser,
-                             final Set<String> result, final Map<String, IOException> exceptions) {
-        if (url.isEmpty() || result.contains(url)) {
+                             final Set<String> visitedPages, final Map<String, IOException> pagesWithExceptions) {
+        if (url.isEmpty() || visitedPages.contains(url)) {
             return;
         }
-        result.add(url);
+        visitedPages.add(url);
 
-        getHost(url, exceptions).ifPresent(hostName -> {
+        getHost(url, pagesWithExceptions).ifPresent(hostName -> {
             Runnable downloaderTask = () -> {
                 try {
                     Document downloaded = downloader.download(url);
@@ -58,11 +58,11 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
                         try {
                             if (remainingDepth > 0) {
                                 for (String link : downloaded.extractLinks()) {
-                                    downloadRec(link, remainingDepth - 1, phaser, result, exceptions);
+                                    downloadRec(link, remainingDepth - 1, phaser, visitedPages, pagesWithExceptions);
                                 }
                             }
                         } catch (IOException e) {
-                            exceptions.put(url, e);
+                            pagesWithExceptions.put(url, e);
                         } finally {
                             phaser.arrive();
                         }
@@ -71,7 +71,7 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
                     phaser.register();
                     extractors.submit(extractorsTask);
                 } catch (IOException e) {
-                    exceptions.put(url, e);
+                    pagesWithExceptions.put(url, e);
                 }
 
                 hostDataMap.computeIfPresent(hostName, ((s, hostInfo) -> {
@@ -104,15 +104,15 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
 
     @Override
     public Result download(String url, int depth) {
-        Set<String> result = new ConcurrentSkipListSet<>();
-        Map<String, IOException> exceptions = new ConcurrentHashMap<>();
+        Set<String> visitedPages = new ConcurrentSkipListSet<>();
+        Map<String, IOException> pagesWithExceptions = new ConcurrentHashMap<>();
 
         Phaser phaser = new Phaser(1);
-        downloadRec(url, depth - 1, phaser, result, exceptions);
+        downloadRec(url, depth - 1, phaser, visitedPages, pagesWithExceptions);
         phaser.arriveAndAwaitAdvance();
 
-        result.removeAll(exceptions.keySet());
-        return new Result(new ArrayList<>(result), exceptions);
+        visitedPages.removeAll(pagesWithExceptions.keySet());
+        return new Result(new ArrayList<>(visitedPages), pagesWithExceptions);
     }
 
     @Override
