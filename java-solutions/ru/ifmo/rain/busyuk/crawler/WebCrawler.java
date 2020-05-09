@@ -16,10 +16,10 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
     private final ExecutorService downloaders;
     private final ExecutorService extractors;
     private final Downloader downloader;
-    private final Map<String, HostData> hostDataMap;
+    private final Map<String, HostManager> hostManagerMap;
     private final int hostCount;
 
-    private static class HostData {
+    private static class HostManager {
         private AtomicInteger count = new AtomicInteger();
         private Queue<Runnable> tasks = new LinkedList<>();
     }
@@ -28,7 +28,7 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
         this.downloader = downloader;
         this.downloaders = Executors.newFixedThreadPool(downloads);
         this.extractors = Executors.newFixedThreadPool(extractors);
-        this.hostDataMap = new ConcurrentHashMap<>();
+        this.hostManagerMap = new ConcurrentHashMap<>();
         this.hostCount = perHost;
     }
 
@@ -75,30 +75,30 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
                     pagesWithExceptions.put(url, e);
                 }
 
-                hostDataMap.computeIfPresent(hostName, ((s, hostInfo) -> {
-                    if (!hostInfo.tasks.isEmpty()) {
-                        downloaders.submit(hostInfo.tasks.poll());
+                hostManagerMap.computeIfPresent(hostName, ((s, hostManager) -> {
+                    if (!hostManager.tasks.isEmpty()) {
+                        downloaders.submit(hostManager.tasks.poll());
                     } else {
-                        hostInfo.count.decrementAndGet();
+                        hostManager.count.decrementAndGet();
                     }
-                    return hostInfo;
+                    return hostManager;
                 }));
                 phaser.arrive();
             };
 
             phaser.register();
 
-            hostDataMap.compute(hostName, ((someUrl, hostData) -> {
-                if (hostData == null) {
-                    hostData = new HostData();
+            hostManagerMap.compute(hostName, ((someUrl, hostManager) -> {
+                if (hostManager == null) {
+                    hostManager = new HostManager();
                 }
-                if (hostData.count.get() >= hostCount) {
-                    hostData.tasks.add(downloaderTask);
+                if (hostManager.count.get() >= hostCount) {
+                    hostManager.tasks.add(downloaderTask);
                 } else {
-                    hostData.count.incrementAndGet();
+                    hostManager.count.incrementAndGet();
                     downloaders.submit(downloaderTask);
                 }
-                return hostData;
+                return hostManager;
             }));
         });
     }
