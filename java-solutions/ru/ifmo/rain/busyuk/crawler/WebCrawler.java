@@ -75,7 +75,7 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
                     pagesWithExceptions.put(url, e);
                 }
 
-                hostManagerMap.computeIfPresent(hostName, ((s, hostManager) -> {
+                hostManagerMap.computeIfPresent(url, ((s, hostManager) -> {
                     if (!hostManager.tasks.isEmpty()) {
                         downloaders.submit(hostManager.tasks.poll());
                     } else {
@@ -88,7 +88,7 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
 
             phaser.register();
 
-            hostManagerMap.compute(hostName, ((someUrl, hostManager) -> {
+            hostManagerMap.compute(url, ((s, hostManager) -> {
                 if (hostManager == null) {
                     hostManager = new HostManager();
                 }
