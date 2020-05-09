@@ -44,7 +44,7 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
 
     private void downloadRec(String url, int remainingDepth, Phaser phaser,
                              final Set<String> visitedPages, final Map<String, IOException> pagesWithExceptions) {
-        if (url == null || url.isEmpty() || visitedPages.contains(url)) {
+        if (url == null || url.isEmpty() || visitedPages.contains(url) || pagesWithExceptions.containsKey(url)) {
             return;
         }
         visitedPages.add(url);
