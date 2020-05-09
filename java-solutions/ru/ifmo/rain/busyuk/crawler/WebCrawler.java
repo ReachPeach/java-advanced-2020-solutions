@@ -123,18 +123,22 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
     }
 
     public static void main(String[] args) {
-        if (args.length < 2) {
-            System.err.print("You should provide at least 2 arguments");
+        if (args.length < 1 || args.length > 5) {
+            System.err.println("Usage: WebCrawler url [depth [downloads [extractors [perHost]]]]");
         } else {
             int[] newArgs = new int[4];
-            for (int i = 2; i <= 6; i++) {
-                newArgs[i - 2] = (i < args.length ? Integer.parseInt(args[i]) : 1);
+            for (int i = 1; i <= 5; i++) {
+                try {
+                    newArgs[i - 1] = (i < args.length ? Integer.parseInt(args[i]) : 1);
+                } catch (NumberFormatException e) {
+                    System.err.println("Not a correct number: " + args[i]);
+                }
             }
             Downloader downloader;
             try {
                 downloader = new CachingDownloader();
             } catch (IOException e) {
-                System.err.print("Error while initialising CachingDownloader");
+                System.err.println("Error while initialising CachingDownloader");
                 return;
             }
             WebCrawler webCrawler = new WebCrawler(downloader, newArgs[1], newArgs[2], newArgs[3]);
