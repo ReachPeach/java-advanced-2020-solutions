@@ -17,11 +17,35 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
     private final ExecutorService extractors;
     private final Downloader downloader;
     private final Map<String, HostManager> hostManagerMap;
-    private final int hostCount;
+    private final int perHost;
 
     private static class HostManager {
         private AtomicInteger count = new AtomicInteger();
         private Queue<Runnable> tasks = new LinkedList<>();
+
+        private int getCount() {
+            return count.get();
+        }
+
+        private void addTask(Runnable task) {
+            tasks.add(task);
+        }
+
+        private void decrementCount() {
+            count.decrementAndGet();
+        }
+
+        private void incrementCount() {
+            count.incrementAndGet();
+        }
+
+        private boolean isEmpty() {
+            return tasks.isEmpty();
+        }
+
+        private Runnable getTask() {
+            return tasks.poll();
+        }
     }
 
     public WebCrawler(Downloader downloader, int downloads, int extractors, int perHost) {
@@ -29,7 +53,7 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
         this.downloaders = Executors.newFixedThreadPool(downloads);
         this.extractors = Executors.newFixedThreadPool(extractors);
         this.hostManagerMap = new ConcurrentHashMap<>();
-        this.hostCount = perHost;
+        this.perHost = perHost;
     }
 
     private Optional<String> getHost(String url, Map<String, IOException> pagesWithExceptions) {
@@ -42,60 +66,66 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
         return result;
     }
 
-    private void downloadRec(String url, int remainingDepth, Phaser phaser,
-                             final Set<String> visitedPages, final Map<String, IOException> pagesWithExceptions) {
-        if (url == null || url.isEmpty() || visitedPages.contains(url) || pagesWithExceptions.containsKey(url)) {
+    private Runnable getDownloaderTask(String url, int remainingDepth, Phaser phaser, String hostName,
+                                       Set<String> visitedPages, Map<String, IOException> pagesWithExceptions) {
+        return () -> {
+            try {
+                Document downloaded = downloader.download(url);
+
+                Runnable extractorsTask = () -> {
+                    try {
+                        if (remainingDepth > 0) {
+                            for (String link : downloaded.extractLinks()) {
+                                downloadRecursively(link, remainingDepth - 1,
+                                        phaser, visitedPages, pagesWithExceptions);
+                            }
+                        }
+                    } catch (IOException e) {
+                        pagesWithExceptions.put(url, e);
+                    } finally {
+                        phaser.arrive();
+                    }
+                };
+
+                phaser.register();
+                extractors.submit(extractorsTask);
+            } catch (IOException e) {
+                pagesWithExceptions.put(url, e);
+            }
+
+            hostManagerMap.computeIfPresent(hostName, ((s, hostManager) -> {
+                if (!hostManager.isEmpty()) {
+                    downloaders.submit(hostManager.getTask());
+                } else {
+                    hostManager.decrementCount();
+                }
+                return hostManager;
+            }));
+            phaser.arrive();
+        };
+    }
+
+    private void downloadRecursively(String url, int remainingDepth, Phaser phaser,
+                                     final Set<String> visitedUrls, final Map<String, IOException> urlsWithExceptions) {
+        if (visitedUrls.contains(url)) {
             return;
         }
-        visitedPages.add(url);
+        visitedUrls.add(url);
 
-        getHost(url, pagesWithExceptions).ifPresent(hostName -> {
-            Runnable downloaderTask = () -> {
-                try {
-                    Document downloaded = downloader.download(url);
-
-                    Runnable extractorsTask = () -> {
-                        try {
-                            if (remainingDepth > 0) {
-                                for (String link : downloaded.extractLinks()) {
-                                    downloadRec(link, remainingDepth - 1,
-                                            phaser, visitedPages, pagesWithExceptions);
-                                }
-                            }
-                        } catch (IOException e) {
-                            pagesWithExceptions.put(url, e);
-                        } finally {
-                            phaser.arrive();
-                        }
-                    };
-
-                    phaser.register();
-                    extractors.submit(extractorsTask);
-                } catch (IOException e) {
-                    pagesWithExceptions.put(url, e);
-                }
-
-                hostManagerMap.computeIfPresent(url, ((s, hostManager) -> {
-                    if (!hostManager.tasks.isEmpty()) {
-                        downloaders.submit(hostManager.tasks.poll());
-                    } else {
-                        hostManager.count.decrementAndGet();
-                    }
-                    return hostManager;
-                }));
-                phaser.arrive();
-            };
-
+        getHost(url, urlsWithExceptions).ifPresent(hostName -> {
+            Runnable downloaderTask = getDownloaderTask(url, remainingDepth, phaser, hostName,
+                    visitedUrls, urlsWithExceptions);
             phaser.register();
 
-            hostManagerMap.compute(url, ((s, hostManager) -> {
+            hostManagerMap.compute(hostName, ((someUrl, hostManager) -> {
                 if (hostManager == null) {
                     hostManager = new HostManager();
                 }
-                if (hostManager.count.get() >= hostCount) {
-                    hostManager.tasks.add(downloaderTask);
+
+                if (hostManager.getCount() >= perHost) {
+                    hostManager.addTask(downloaderTask);
                 } else {
-                    hostManager.count.incrementAndGet();
+                    hostManager.incrementCount();
                     downloaders.submit(downloaderTask);
                 }
                 return hostManager;
@@ -105,15 +135,15 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
 
     @Override
     public Result download(String url, int depth) {
-        Set<String> visitedPages = new ConcurrentSkipListSet<>();
-        Map<String, IOException> pagesWithExceptions = new ConcurrentHashMap<>();
+        Set<String> visitedUrls = new ConcurrentSkipListSet<>();
+        Map<String, IOException> urlsWithExceptions = new ConcurrentHashMap<>();
 
         Phaser phaser = new Phaser(1);
-        downloadRec(url, depth - 1, phaser, visitedPages, pagesWithExceptions);
+        downloadRecursively(url, depth - 1, phaser, visitedUrls, urlsWithExceptions);
         phaser.arriveAndAwaitAdvance();
 
-        visitedPages.removeAll(pagesWithExceptions.keySet());
-        return new Result(new ArrayList<>(visitedPages), pagesWithExceptions);
+        visitedUrls.removeAll(urlsWithExceptions.keySet());
+        return new Result(new ArrayList<>(visitedUrls), urlsWithExceptions);
     }
 
     @Override
@@ -132,6 +162,7 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
                     newArgs[i - 1] = (i < args.length ? Integer.parseInt(args[i]) : 1);
                 } catch (NumberFormatException e) {
                     System.err.println("Not a correct number: " + args[i]);
+                    newArgs[i - 1] = 1;
                 }
             }
             Downloader downloader;
@@ -145,6 +176,7 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
             Result result = webCrawler.download(args[1], newArgs[0]);
             System.out.print("Successfully downloaded " + result.getDownloaded().size() + " pages, " +
                     result.getErrors().size() + " errors occurred");
+            webCrawler.close();
         }
     }
 }
