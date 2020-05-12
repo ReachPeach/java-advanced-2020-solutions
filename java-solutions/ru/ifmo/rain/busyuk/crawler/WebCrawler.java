@@ -177,7 +177,6 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
             System.out.print("Successfully downloaded " + result.getDownloaded().size() + " pages, " +
                     result.getErrors().size() + " errors occurred");
             webCrawler.close();
-            //debug test//
         }
     }
 }
