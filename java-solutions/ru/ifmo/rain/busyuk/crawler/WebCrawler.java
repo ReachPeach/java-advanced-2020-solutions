@@ -43,7 +43,7 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
             return tasks.isEmpty();
         }
 
-        private Runnable getTask() {
+        private Runnable pollTask() {
             return tasks.poll();
         }
     }
@@ -67,7 +67,7 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
     }
 
     private Runnable getDownloaderTask(String url, int remainingDepth, Phaser phaser, String hostName,
-                                       Set<String> visitedPages, Map<String, IOException> pagesWithExceptions) {
+                                       Set<String> visitedUrls, Map<String, IOException> urlsWithExceptions) {
         return () -> {
             try {
                 Document downloaded = downloader.download(url);
@@ -77,11 +77,11 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
                         if (remainingDepth > 0) {
                             for (String link : downloaded.extractLinks()) {
                                 downloadRecursively(link, remainingDepth - 1,
-                                        phaser, visitedPages, pagesWithExceptions);
+                                        phaser, visitedUrls, urlsWithExceptions);
                             }
                         }
                     } catch (IOException e) {
-                        pagesWithExceptions.put(url, e);
+                        urlsWithExceptions.put(url, e);
                     } finally {
                         phaser.arrive();
                     }
@@ -90,12 +90,12 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
                 phaser.register();
                 extractors.submit(extractorsTask);
             } catch (IOException e) {
-                pagesWithExceptions.put(url, e);
+                urlsWithExceptions.put(url, e);
             }
 
-            hostManagerMap.computeIfPresent(hostName, ((s, hostManager) -> {
+            hostManagerMap.computeIfPresent(hostName, ((someUrl, hostManager) -> {
                 if (!hostManager.isEmpty()) {
-                    downloaders.submit(hostManager.getTask());
+                    downloaders.submit(hostManager.pollTask());
                 } else {
                     hostManager.decrementCount();
                 }
@@ -106,7 +106,7 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
     }
 
     private void downloadRecursively(String url, int remainingDepth, Phaser phaser,
-                                     final Set<String> visitedUrls, final Map<String, IOException> urlsWithExceptions) {
+                                     Set<String> visitedUrls, Map<String, IOException> urlsWithExceptions) {
         if (visitedUrls.contains(url)) {
             return;
         }
@@ -177,7 +177,6 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
             System.out.print("Successfully downloaded " + result.getDownloaded().size() + " pages, " +
                     result.getErrors().size() + " errors occurred");
             webCrawler.close();
-            
         }
     }
 }
