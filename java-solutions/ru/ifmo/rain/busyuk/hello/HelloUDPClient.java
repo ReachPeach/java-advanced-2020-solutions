@@ -30,7 +30,7 @@ public class HelloUDPClient implements info.kgeorgiy.java.advanced.hello.HelloCl
 
     private void send(final SocketAddress to, final String prefix, final int requests, final int threadId) {
         try (var socket = new DatagramSocket()) {
-            socket.setSoTimeout(300);
+            socket.setSoTimeout(100);
             for (int i = 0; i < requests; i++) {
                 final var message = String.format("%s%d_%d", prefix, threadId, i);
                 final var request = makePacket(message.getBytes(StandardCharsets.UTF_8), to);
