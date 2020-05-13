@@ -25,7 +25,7 @@ public class ResultCollector<R> {
 
     protected synchronized List<R> getResults() throws InterruptedException {
         while (done < count) {
-            wait(); 
+            wait();
         }
         return results;
     }
