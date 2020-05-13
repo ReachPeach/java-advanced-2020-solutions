@@ -152,6 +152,7 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
                     return;
                 }
             }
+
             Downloader downloader;
             try {
                 downloader = new CachingDownloader();
@@ -159,7 +160,7 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
                 throw new IOException("Error while initialising CachingDownloader" + e.getMessage(), e);
             }
             try (WebCrawler webCrawler = new WebCrawler(downloader, parsedArgs[1], parsedArgs[2], parsedArgs[3])) {
-                Result result = webCrawler.download(args[1], parsedArgs[0]);
+                Result result = webCrawler.download(args[0], parsedArgs[0]);
                 System.out.print("Successfully downloaded " + result.getDownloaded().size() + " pages, " +
                         result.getErrors().size() + " errors occurred");
             }
