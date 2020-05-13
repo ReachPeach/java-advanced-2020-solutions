@@ -19,35 +19,6 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
     private final Map<String, HostManager> hostManagerMap;
     private final int perHost;
 
-    private static class HostManager {
-        private AtomicInteger count = new AtomicInteger();
-        private Queue<Runnable> tasks = new LinkedList<>();
-
-        private int getCount() {
-            return count.get();
-        }
-
-        private void addTask(Runnable task) {
-            tasks.add(task);
-        }
-
-        private void decrementCount() {
-            count.decrementAndGet();
-        }
-
-        private void incrementCount() {
-            count.incrementAndGet();
-        }
-
-        private boolean isEmpty() {
-            return tasks.isEmpty();
-        }
-
-        private Runnable pollTask() {
-            return tasks.poll();
-        }
-    }
-
     public WebCrawler(Downloader downloader, int downloads, int extractors, int perHost) {
         this.downloader = downloader;
         this.downloaders = Executors.newFixedThreadPool(downloads);
@@ -56,49 +27,49 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
         this.perHost = perHost;
     }
 
-    private Optional<String> getHost(String url, Map<String, IOException> pagesWithExceptions) {
+    private Optional<String> getHostName(String url, Map<String, IOException> urlsWithExceptions) {
         Optional<String> result = Optional.empty();
         try {
             result = Optional.of(URLUtils.getHost(url));
         } catch (MalformedURLException e) {
-            pagesWithExceptions.put(url, e);
+            urlsWithExceptions.put(url, e);
         }
         return result;
     }
 
-    private Runnable getDownloaderTask(String url, int remainingDepth, Phaser phaser, String hostName,
+    private Runnable newExtractorsTask(Document downloaded, int remainingDepth, Phaser phaser, String url,
                                        Set<String> visitedUrls, Map<String, IOException> urlsWithExceptions) {
         return () -> {
             try {
+                for (String link : downloaded.extractLinks()) {
+                    downloadRecursively(link, remainingDepth - 1,
+                            phaser, visitedUrls, urlsWithExceptions);
+                }
+            } catch (IOException e) {
+                urlsWithExceptions.put(url, e);
+            } finally {
+                phaser.arrive();
+            }
+        };
+    }
+
+    private Runnable newDownloadersTask(String url, int remainingDepth, Phaser phaser, String hostName,
+                                        Set<String> visitedUrls, Map<String, IOException> urlsWithExceptions) {
+        return () -> {
+            try {
                 Document downloaded = downloader.download(url);
-
-                Runnable extractorsTask = () -> {
-                    try {
-                        if (remainingDepth > 0) {
-                            for (String link : downloaded.extractLinks()) {
-                                downloadRecursively(link, remainingDepth - 1,
-                                        phaser, visitedUrls, urlsWithExceptions);
-                            }
-                        }
-                    } catch (IOException e) {
-                        urlsWithExceptions.put(url, e);
-                    } finally {
-                        phaser.arrive();
-                    }
-                };
-
-                phaser.register();
-                extractors.submit(extractorsTask);
+                if (remainingDepth > 0) {
+                    Runnable extractorsTask = newExtractorsTask(downloaded, remainingDepth, phaser, url,
+                            visitedUrls, urlsWithExceptions);
+                    phaser.register();
+                    extractors.submit(extractorsTask);
+                }
             } catch (IOException e) {
                 urlsWithExceptions.put(url, e);
             }
 
             hostManagerMap.computeIfPresent(hostName, ((someUrl, hostManager) -> {
-                if (!hostManager.isEmpty()) {
-                    downloaders.submit(hostManager.pollTask());
-                } else {
-                    hostManager.decrementCount();
-                }
+                hostManager.pollTask(downloaders);
                 return hostManager;
             }));
             phaser.arrive();
@@ -107,13 +78,13 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
 
     private void downloadRecursively(String url, int remainingDepth, Phaser phaser,
                                      Set<String> visitedUrls, Map<String, IOException> urlsWithExceptions) {
-        if (visitedUrls.contains(url)) {
+
+        if (!visitedUrls.add(url)) {
             return;
         }
-        visitedUrls.add(url);
 
-        getHost(url, urlsWithExceptions).ifPresent(hostName -> {
-            Runnable downloaderTask = getDownloaderTask(url, remainingDepth, phaser, hostName,
+        getHostName(url, urlsWithExceptions).ifPresent(hostName -> {
+            Runnable downloadersTask = newDownloadersTask(url, remainingDepth, phaser, hostName,
                     visitedUrls, urlsWithExceptions);
             phaser.register();
 
@@ -121,13 +92,7 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
                 if (hostManager == null) {
                     hostManager = new HostManager();
                 }
-
-                if (hostManager.getCount() >= perHost) {
-                    hostManager.addTask(downloaderTask);
-                } else {
-                    hostManager.incrementCount();
-                    downloaders.submit(downloaderTask);
-                }
+                hostManager.addTask(downloaders, downloadersTask, perHost);
                 return hostManager;
             }));
         });
@@ -152,31 +117,52 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
         downloaders.shutdownNow();
     }
 
-    public static void main(String[] args) {
+    private static class HostManager {
+        private final AtomicInteger count = new AtomicInteger();
+        private final Queue<Runnable> tasks = new LinkedList<>();
+
+        synchronized private void pollTask(ExecutorService downloaders) {
+            if (!tasks.isEmpty()) {
+                downloaders.submit(tasks.poll());
+            } else {
+                count.decrementAndGet();
+            }
+        }
+
+        synchronized private void addTask(ExecutorService downloaders, Runnable downloadersTask, int perHost) {
+            if (count.get() >= perHost) {
+                tasks.add(downloadersTask);
+            } else {
+                count.incrementAndGet();
+                downloaders.submit(downloadersTask);
+            }
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
         if (args.length < 1 || args.length > 5) {
             System.err.println("Usage: WebCrawler url [depth [downloads [extractors [perHost]]]]");
         } else {
-            int[] newArgs = new int[4];
+            int[] parsedArgs = new int[4];
             for (int i = 1; i <= 5; i++) {
                 try {
-                    newArgs[i - 1] = (i < args.length ? Integer.parseInt(args[i]) : 1);
+                    parsedArgs[i - 1] = (i < args.length ? Integer.parseInt(args[i]) : 1);
                 } catch (NumberFormatException e) {
                     System.err.println("Not a correct number: " + args[i]);
-                    newArgs[i - 1] = 1;
+                    return;
                 }
             }
             Downloader downloader;
             try {
                 downloader = new CachingDownloader();
             } catch (IOException e) {
-                System.err.println("Error while initialising CachingDownloader");
-                return;
+                throw new IOException("Error while initialising CachingDownloader" + e.getMessage(), e);
             }
-            WebCrawler webCrawler = new WebCrawler(downloader, newArgs[1], newArgs[2], newArgs[3]);
-            Result result = webCrawler.download(args[1], newArgs[0]);
-            System.out.print("Successfully downloaded " + result.getDownloaded().size() + " pages, " +
-                    result.getErrors().size() + " errors occurred");
-            webCrawler.close();
+            try (WebCrawler webCrawler = new WebCrawler(downloader, parsedArgs[1], parsedArgs[2], parsedArgs[3])) {
+                Result result = webCrawler.download(args[1], parsedArgs[0]);
+                System.out.print("Successfully downloaded " + result.getDownloaded().size() + " pages, " +
+                        result.getErrors().size() + " errors occurred");
+            }
         }
     }
 }
