@@ -157,7 +157,7 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
             try {
                 downloader = new CachingDownloader();
             } catch (IOException e) {
-                throw new IOException("Error while initialising CachingDownloader" + e.getMessage(), e);
+                throw new IOException(" Error while initialising CachingDownloader" + e.getMessage(), e);
             }
             try (WebCrawler webCrawler = new WebCrawler(downloader, parsedArgs[1], parsedArgs[2], parsedArgs[3])) {
                 Result result = webCrawler.download(args[0], parsedArgs[0]);
