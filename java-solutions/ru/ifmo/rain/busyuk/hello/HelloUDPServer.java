@@ -5,48 +5,38 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.*;
 
+import static ru.ifmo.rain.busyuk.hello.HelloUDPUtils.*;
+
 public class HelloUDPServer implements info.kgeorgiy.java.advanced.hello.HelloServer {
     private DatagramSocket socket;
     private int requestBufferSize;
     private ExecutorService listener;
     private ExecutorService requestsSender;
-    private boolean closed = true;
-
-
-    private DatagramPacket makePacket(final byte[] buffer, final SocketAddress to) {
-        return new DatagramPacket(buffer, 0, buffer.length, to);
-    }
-
-    private DatagramPacket makePacket(int bufferSize) {
-        final var buffer = new byte[bufferSize];
-        return new DatagramPacket(buffer, bufferSize);
-    }
-
-    private String parsePacket(DatagramPacket packet) {
-        return new String(packet.getData(), packet.getOffset(), packet.getLength(), StandardCharsets.UTF_8);
-    }
+    private boolean closed;
 
     private void sendResponse(DatagramPacket packet) {
-        final var requestMessage = parsePacket(packet);
-        final var responseMessage = "Hello, " + requestMessage;
-        final var responsePacket = makePacket(responseMessage.getBytes(StandardCharsets.UTF_8), packet.getSocketAddress());
+        final String requestMessage = parsePacket(packet);
+        final String responseMessage = "Hello, " + requestMessage;
+        final DatagramPacket responsePacket = makePacket(responseMessage.getBytes(StandardCharsets.UTF_8),
+                packet.getSocketAddress());
 
         try {
             socket.send(responsePacket);
         } catch (IOException e) {
-            System.out.println(String.format("ERROR. Can't send packet to %s%nLog:%s", packet.getSocketAddress(), e.getMessage()));
+            System.err.println(String.format("Can't send packet to %s%nLog:%s", packet.getSocketAddress(),
+                    e.getMessage()));
         }
     }
 
     private void listen() {
         while (!Thread.currentThread().isInterrupted() && !socket.isClosed()) {
-            final var packet = makePacket(requestBufferSize);
+            final DatagramPacket packet = makePacket(requestBufferSize);
             try {
                 socket.receive(packet);
                 requestsSender.submit(() -> sendResponse(packet));
             } catch (IOException e) {
                 if (!closed) {
-                    System.out.println("Failed to receive a packet: " + e.getMessage());
+                    System.out.println("Failed receiving packet: " + e.getMessage());
                 }
             }
         }
@@ -58,8 +48,7 @@ public class HelloUDPServer implements info.kgeorgiy.java.advanced.hello.HelloSe
             socket = new DatagramSocket(port);
             requestBufferSize = socket.getReceiveBufferSize();
         } catch (SocketException e) {
-            System.out.println(" " + port);
-            return;
+            throw new IllegalArgumentException("Problems with port: " + port + e.getMessage(), e);
         }
 
         listener = Executors.newSingleThreadExecutor();
@@ -82,21 +71,18 @@ public class HelloUDPServer implements info.kgeorgiy.java.advanced.hello.HelloSe
 
     public static void main(String[] args) {
         if (args == null || args.length != 2 || args[0] == null || args[1] == null) {
-            System.out.println("Invalid arguments!");
+            System.err.println("Incorrect arguments provided");
             return;
         }
 
-        int port;
-        int threads;
-
+        int port, threads;
         try {
             port = Integer.parseInt(args[0]);
             threads = Integer.parseInt(args[1]);
         } catch (NumberFormatException e) {
-            System.out.println("Format of arguments is incorrect " + e.getMessage());
+            System.err.println("Format of arguments is incorrect " + e.getMessage());
             return;
         }
-
         new HelloUDPServer().start(port, threads);
     }
 }
