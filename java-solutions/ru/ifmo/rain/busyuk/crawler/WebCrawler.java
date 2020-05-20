@@ -78,7 +78,6 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
 
     private void downloadRecursively(String url, int remainingDepth, Phaser phaser,
                                      Set<String> visitedUrls, Map<String, IOException> urlsWithExceptions) {
-
         if (!visitedUrls.add(url)) {
             return;
         }
@@ -152,15 +151,16 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
                     return;
                 }
             }
-
+            String url = args[0];
+            int depth = parsedArgs[0], downloads = parsedArgs[1], extractors = parsedArgs[2], perHost = parsedArgs[3];
             Downloader downloader;
             try {
                 downloader = new CachingDownloader();
             } catch (IOException e) {
-                throw new IOException(" Error while initialising CachingDownloader" + e.getMessage(), e);
+                throw new IOException("Error while initialising CachingDownloader" + e.getMessage(), e);
             }
-            try (WebCrawler webCrawler = new WebCrawler(downloader, parsedArgs[1], parsedArgs[2], parsedArgs[3])) {
-                Result result = webCrawler.download(args[0], parsedArgs[0]);
+            try (WebCrawler webCrawler = new WebCrawler(downloader, downloads, extractors, perHost)) {
+                Result result = webCrawler.download(url, depth);
                 System.out.print("Successfully downloaded " + result.getDownloaded().size() + " pages, " +
                         result.getErrors().size() + " errors occurred");
             }
