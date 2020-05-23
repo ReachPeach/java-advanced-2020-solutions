@@ -43,7 +43,7 @@ public class HelloUDPClient implements info.kgeorgiy.java.advanced.hello.HelloCl
         try {
             address = InetAddress.getByName(host);
         } catch (UnknownHostException e) {
-            throw new IllegalArgumentException("Failed taking name by host: " + host + e.getMessage(), e);
+            throw new IllegalArgumentException("Failed taking host by name: " + host + e.getMessage(), e);
         }
 
         final InetSocketAddress to = new InetSocketAddress(address, port);
