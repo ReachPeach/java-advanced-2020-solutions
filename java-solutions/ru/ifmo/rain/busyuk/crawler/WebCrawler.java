@@ -66,14 +66,16 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
                 }
             } catch (IOException e) {
                 urlsWithExceptions.put(url, e);
+            } finally {
+                hostManagerMap.computeIfPresent(hostName, ((someUrl, hostManager) -> {
+                    Runnable task = hostManager.pollTask();
+                    if (task != null) {
+                        downloaders.submit(task);
+                    }
+                    return hostManager;
+                }));
+                phaser.arrive();
             }
-
-            hostManagerMap.computeIfPresent(hostName, ((someUrl, hostManager) -> {
-                hostManager.pollTask(downloaders);
-                return hostManager;
-            }));
-
-            phaser.arrive();
         };
     }
 
@@ -92,7 +94,9 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
                 if (hostManager == null) {
                     hostManager = new HostManager();
                 }
-                hostManager.addTask(downloaders, downloadersTask, perHost);
+                if (!hostManager.addTask(downloadersTask, perHost)) {
+                    downloaders.submit(downloadersTask);
+                }
                 return hostManager;
             }));
         });
@@ -121,20 +125,22 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
         private final AtomicInteger count = new AtomicInteger();
         private final Queue<Runnable> tasks = new LinkedList<>();
 
-        synchronized private void pollTask(ExecutorService downloaders) {
+        synchronized private Runnable pollTask() {
             if (!tasks.isEmpty()) {
-                downloaders.submit(tasks.poll());
+                return tasks.poll();
             } else {
                 count.decrementAndGet();
+                return null;
             }
         }
 
-        synchronized private void addTask(ExecutorService downloaders, Runnable downloadersTask, int perHost) {
+        synchronized private boolean addTask(Runnable downloadersTask, int perHost) {
             if (count.get() >= perHost) {
                 tasks.add(downloadersTask);
+                return true;
             } else {
                 count.incrementAndGet();
-                downloaders.submit(downloadersTask);
+                return false;
             }
         }
     }
@@ -158,7 +164,7 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
             try {
                 downloader = new CachingDownloader();
             } catch (IOException e) {
-                throw new IOException("Error while initialising CachingDownloader " + e.getMessage(), e);
+                throw new IOException("Error while initialising CachingDownloader" + e.getMessage(), e);
             }
             try (WebCrawler webCrawler = new WebCrawler(downloader, downloads, extractors, perHost)) {
                 Result result = webCrawler.download(url, depth);
