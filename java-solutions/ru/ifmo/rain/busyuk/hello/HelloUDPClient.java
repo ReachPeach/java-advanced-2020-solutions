@@ -12,17 +12,17 @@ import static ru.ifmo.rain.busyuk.hello.HelloUDPUtils.*;
 public class HelloUDPClient implements info.kgeorgiy.java.advanced.hello.HelloClient {
     private final static int TIMEOUT_DELAY = 100;
 
-    private void send(final SocketAddress to, final String prefix, final int requests, final int threadIndex) {
+    private void send(final SocketAddress socketAddress, final String prefix, final int requests, final int threadIndex) {
         try (DatagramSocket socket = new DatagramSocket()) {
             socket.setSoTimeout(TIMEOUT_DELAY);
             for (int requestIndex = 0; requestIndex < requests; requestIndex++) {
                 final String message = String.format("%s%d_%d", prefix, threadIndex, requestIndex);
-                final DatagramPacket request = makePacket(message.getBytes(StandardCharsets.UTF_8), to);
+                final DatagramPacket request = makePacket(message.getBytes(StandardCharsets.UTF_8), socketAddress);
                 final DatagramPacket response = makePacket(socket.getReceiveBufferSize());
                 while (!Thread.currentThread().isInterrupted() && !socket.isClosed()) {
                     try {
                         socket.send(request);
-                        System.out.println(String.format("Send to %s: %s%n", to.toString(), message));
+                        System.out.println(String.format("Send to %s: %s%n", socketAddress.toString(), message));
                         socket.receive(response);
                         final String responseMessage = parsePacket(response);
                         if (responseMatches(requestIndex, threadIndex, responseMessage)) {
@@ -48,11 +48,11 @@ public class HelloUDPClient implements info.kgeorgiy.java.advanced.hello.HelloCl
             throw new IllegalArgumentException("Failed taking host by name: " + host + e.getMessage(), e);
         }
 
-        final InetSocketAddress to = new InetSocketAddress(address, port);
+        final InetSocketAddress inetSocketAddress = new InetSocketAddress(address, port);
         final ExecutorService senders = Executors.newFixedThreadPool(threads);
         for (int i = 0; i < threads; i++) {
             final int finalIndex = i;
-            senders.execute(() -> send(to, prefix, requests, finalIndex));
+            senders.execute(() -> send(inetSocketAddress, prefix, requests, finalIndex));
         }
         senders.shutdown();
         try {
