@@ -72,6 +72,7 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
                 hostManager.pollTask(downloaders);
                 return hostManager;
             }));
+
             phaser.arrive();
         };
     }
@@ -157,7 +158,7 @@ public class WebCrawler implements info.kgeorgiy.java.advanced.crawler.Crawler {
             try {
                 downloader = new CachingDownloader();
             } catch (IOException e) {
-                throw new IOException("Error while initialising CachingDownloader" + e.getMessage(), e);
+                throw new IOException("Error while initialising CachingDownloader " + e.getMessage(), e);
             }
             try (WebCrawler webCrawler = new WebCrawler(downloader, downloads, extractors, perHost)) {
                 Result result = webCrawler.download(url, depth);
