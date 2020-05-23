@@ -10,11 +10,11 @@ import java.util.concurrent.TimeUnit;
 import static ru.ifmo.rain.busyuk.hello.HelloUDPUtils.*;
 
 public class HelloUDPClient implements info.kgeorgiy.java.advanced.hello.HelloClient {
-    private void send(final SocketAddress to, final String prefix, final int requests, final int threadNumber) {
+    private void send(final SocketAddress to, final String prefix, final int requests, final int threadIndex) {
         try (DatagramSocket socket = new DatagramSocket()) {
-            socket.setSoTimeout(100);
-            for (int requestNumber = 0; requestNumber < requests; requestNumber++) {
-                final String message = String.format("%s%d_%d", prefix, threadNumber, requestNumber);
+            socket.setSoTimeout(TIMEOUT_DELAY);
+            for (int requestIndex = 0; requestIndex < requests; requestIndex++) {
+                final String message = String.format("%s%d_%d", prefix, threadIndex, requestIndex);
                 final DatagramPacket request = makePacket(message.getBytes(StandardCharsets.UTF_8), to);
                 final DatagramPacket response = makePacket(socket.getReceiveBufferSize());
                 while (!Thread.currentThread().isInterrupted() && !socket.isClosed()) {
@@ -22,13 +22,13 @@ public class HelloUDPClient implements info.kgeorgiy.java.advanced.hello.HelloCl
                         socket.send(request);
                         System.out.println(String.format("Send to %s: %s%n", to.toString(), message));
                         socket.receive(response);
-                        final String respondMessage = parsePacket(response);
-                        if (responseMatches(requestNumber, threadNumber, respondMessage)) {
-                            System.out.println(String.format("Text of response: %s%n", respondMessage));
+                        final String responseMessage = parsePacket(response);
+                        if (responseMatches(requestIndex, threadIndex, responseMessage)) {
+                            System.out.println(String.format("Text of response: %s%n", responseMessage));
                             break;
                         }
                     } catch (IOException e) {
-                        System.out.println(String.format("Failed sending in thread %d: %s", threadNumber, e.getMessage()));
+                        System.out.println(String.format("Failed sending in thread %d: %s", threadIndex, e.getMessage()));
                     }
                 }
             }
@@ -54,7 +54,7 @@ public class HelloUDPClient implements info.kgeorgiy.java.advanced.hello.HelloCl
         }
         senders.shutdown();
         try {
-            senders.awaitTermination(threads * requests * 10, TimeUnit.MINUTES);
+            senders.awaitTermination(threads * requests * AWAIT_TERMINATION_COEFFICIENT, TimeUnit.MINUTES);
         } catch (InterruptedException ignored) {
         }
     }

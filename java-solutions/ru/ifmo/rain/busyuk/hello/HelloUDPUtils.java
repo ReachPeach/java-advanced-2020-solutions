@@ -5,7 +5,10 @@ import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
-public class HelloUDPUtils {
+class HelloUDPUtils {
+    protected final static int TIMEOUT_DELAY = 100;
+    protected final static int AWAIT_TERMINATION_COEFFICIENT = 10;
+
     protected static DatagramPacket makePacket(final byte[] buffer, final SocketAddress to) {
         return new DatagramPacket(buffer, 0, buffer.length, to);
     }
@@ -19,9 +22,9 @@ public class HelloUDPUtils {
         return new String(packet.getData(), packet.getOffset(), packet.getLength(), StandardCharsets.UTF_8);
     }
 
-    protected static boolean responseMatches(final int requestNumber, final int threadNumber, final String response) {
-        String regex = String.format("^\\D*%d\\D+%d\\D*$", threadNumber, requestNumber);
-        return Pattern.matches(regex, response);
+    protected static boolean responseMatches(final int requestIndex, final int threadIndex, final String responseMessage) {
+        String regex = String.format("^\\D*%d\\D+%d\\D*$", threadIndex, requestIndex);
+        return Pattern.matches(regex, responseMessage);
     }
 
 }
