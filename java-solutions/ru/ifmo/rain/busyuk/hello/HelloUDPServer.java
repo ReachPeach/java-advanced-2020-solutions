@@ -11,7 +11,7 @@ public class HelloUDPServer implements info.kgeorgiy.java.advanced.hello.HelloSe
     private DatagramSocket socket;
     private int requestBufferSize;
     private ExecutorService requestReceiver;
-    private ExecutorService requestsSender;
+    private ExecutorService responcesSender;
     private boolean closed;
 
     private void sendResponse(DatagramPacket packet) {
@@ -33,7 +33,7 @@ public class HelloUDPServer implements info.kgeorgiy.java.advanced.hello.HelloSe
             final DatagramPacket packet = makePacket(requestBufferSize);
             try {
                 socket.receive(packet);
-                requestsSender.submit(() -> sendResponse(packet));
+                responcesSender.submit(() -> sendResponse(packet));
             } catch (IOException e) {
                 if (!closed) {
                     System.out.println("Failed receiving packet: " + e.getMessage());
@@ -53,7 +53,7 @@ public class HelloUDPServer implements info.kgeorgiy.java.advanced.hello.HelloSe
 
         requestReceiver = Executors.newSingleThreadExecutor();
         requestReceiver.submit(this::receiveRequests);
-        requestsSender = Executors.newFixedThreadPool(threads);
+        responcesSender = Executors.newFixedThreadPool(threads);
         closed = false;
     }
 
@@ -61,9 +61,9 @@ public class HelloUDPServer implements info.kgeorgiy.java.advanced.hello.HelloSe
     public void close() {
         closed = true;
         requestReceiver.shutdownNow();
-        requestsSender.shutdownNow();
+        responcesSender.shutdownNow();
         try {
-            requestsSender.awaitTermination(10, TimeUnit.SECONDS);
+            responcesSender.awaitTermination(10, TimeUnit.SECONDS);
         } catch (InterruptedException ignored) {
         }
         socket.close();
