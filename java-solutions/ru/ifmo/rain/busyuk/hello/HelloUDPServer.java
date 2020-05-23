@@ -10,7 +10,7 @@ import static ru.ifmo.rain.busyuk.hello.HelloUDPUtils.*;
 public class HelloUDPServer implements info.kgeorgiy.java.advanced.hello.HelloServer {
     private DatagramSocket socket;
     private int requestBufferSize;
-    private ExecutorService requestReceiver;
+    private ExecutorService requestsReceiver;
     private ExecutorService responsesSender;
     private boolean closed;
 
@@ -51,8 +51,8 @@ public class HelloUDPServer implements info.kgeorgiy.java.advanced.hello.HelloSe
             throw new IllegalArgumentException("Problems with port: " + port + e.getMessage(), e);
         }
 
-        requestReceiver = Executors.newSingleThreadExecutor();
-        requestReceiver.submit(this::receiveRequests);
+        requestsReceiver = Executors.newSingleThreadExecutor();
+        requestsReceiver.submit(this::receiveRequests);
         responsesSender = Executors.newFixedThreadPool(threads);
         closed = false;
     }
@@ -60,7 +60,7 @@ public class HelloUDPServer implements info.kgeorgiy.java.advanced.hello.HelloSe
     @Override
     public void close() {
         closed = true;
-        requestReceiver.shutdownNow();
+        requestsReceiver.shutdownNow();
         responsesSender.shutdownNow();
         try {
             responsesSender.awaitTermination(10, TimeUnit.SECONDS);
