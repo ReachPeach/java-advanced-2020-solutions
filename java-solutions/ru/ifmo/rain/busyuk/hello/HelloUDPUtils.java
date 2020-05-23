@@ -6,6 +6,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
 class HelloUDPUtils {
+    protected final static int AWAIT_TERMINATION_COEFFICIENT = 10;
+
     protected static DatagramPacket makePacket(final byte[] buffer, final SocketAddress to) {
         return new DatagramPacket(buffer, 0, buffer.length, to);
     }

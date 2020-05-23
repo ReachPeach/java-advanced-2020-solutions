@@ -63,7 +63,7 @@ public class HelloUDPServer implements info.kgeorgiy.java.advanced.hello.HelloSe
         requestsReceiver.shutdownNow();
         responsesSender.shutdownNow();
         try {
-            responsesSender.awaitTermination(10, TimeUnit.SECONDS);
+            responsesSender.awaitTermination(AWAIT_TERMINATION_COEFFICIENT, TimeUnit.SECONDS);
         } catch (InterruptedException ignored) {
         }
         socket.close();
