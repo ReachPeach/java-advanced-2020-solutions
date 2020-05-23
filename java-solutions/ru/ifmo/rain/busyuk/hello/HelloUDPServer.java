@@ -12,7 +12,7 @@ public class HelloUDPServer implements info.kgeorgiy.java.advanced.hello.HelloSe
     private int requestBufferSize;
     private ExecutorService requestReceiver;
     private ExecutorService responsesSender;
-    private boolean isSocketClosed;
+    private boolean closed;
 
     private void sendResponse(DatagramPacket packet) {
         final String requestMessage = parsePacket(packet);
@@ -23,7 +23,7 @@ public class HelloUDPServer implements info.kgeorgiy.java.advanced.hello.HelloSe
         try {
             socket.send(responsePacket);
         } catch (IOException e) {
-            System.err.println(String.format("Can't send packet to %s%nLog:%s", packet.getSocketAddress(),
+            System.err.println(String.format("Can't send packet to %s%nLog: %s", packet.getSocketAddress(),
                     e.getMessage()));
         }
     }
@@ -35,7 +35,7 @@ public class HelloUDPServer implements info.kgeorgiy.java.advanced.hello.HelloSe
                 socket.receive(packet);
                 responsesSender.submit(() -> sendResponse(packet));
             } catch (IOException e) {
-                if (!isSocketClosed) {
+                if (!closed) {
                     System.out.println("Failed receiving packet: " + e.getMessage());
                 }
             }
@@ -54,12 +54,12 @@ public class HelloUDPServer implements info.kgeorgiy.java.advanced.hello.HelloSe
         requestReceiver = Executors.newSingleThreadExecutor();
         requestReceiver.submit(this::receiveRequests);
         responsesSender = Executors.newFixedThreadPool(threads);
-        isSocketClosed = false;
+        closed = false;
     }
 
     @Override
     public void close() {
-        isSocketClosed = true;
+        closed = true;
         requestReceiver.shutdownNow();
         responsesSender.shutdownNow();
         try {
