@@ -83,6 +83,8 @@ public class HelloUDPServer implements info.kgeorgiy.java.advanced.hello.HelloSe
             System.err.println("Format of arguments is incorrect " + e.getMessage());
             return;
         }
-        new HelloUDPServer().start(port, threads);
+        HelloUDPServer helloUDPServer = new HelloUDPServer();
+        helloUDPServer.start(port, threads);
+        helloUDPServer.close();
     }
 }
