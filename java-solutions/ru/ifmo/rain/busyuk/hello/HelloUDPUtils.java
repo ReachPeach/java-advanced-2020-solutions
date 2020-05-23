@@ -3,6 +3,7 @@ package ru.ifmo.rain.busyuk.hello;
 import java.net.DatagramPacket;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Pattern;
 
 public class HelloUDPUtils {
     protected static DatagramPacket makePacket(final byte[] buffer, final SocketAddress to) {
@@ -17,4 +18,10 @@ public class HelloUDPUtils {
     protected static String parsePacket(DatagramPacket packet) {
         return new String(packet.getData(), packet.getOffset(), packet.getLength(), StandardCharsets.UTF_8);
     }
+
+    protected static boolean responseMatches(final int requestNumber, final int threadNumber, final String response) {
+        String regex = String.format("^\\D*%d\\D+%d\\D*$", threadNumber, requestNumber);
+        return Pattern.matches(regex, response);
+    }
+
 }

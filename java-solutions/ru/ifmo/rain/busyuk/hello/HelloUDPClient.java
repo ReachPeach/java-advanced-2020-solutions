@@ -6,16 +6,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 
 import static ru.ifmo.rain.busyuk.hello.HelloUDPUtils.*;
 
 public class HelloUDPClient implements info.kgeorgiy.java.advanced.hello.HelloClient {
-    private boolean matches(final int requestNumber, final int threadNumber, final String response) {
-        String regex = String.format("^\\D*%d\\D+%d\\D*$", threadNumber, requestNumber);
-        return Pattern.matches(regex, response);
-    }
-
     private void send(final SocketAddress to, final String prefix, final int requests, final int threadNumber) {
         try (DatagramSocket socket = new DatagramSocket()) {
             socket.setSoTimeout(100);
@@ -29,7 +23,7 @@ public class HelloUDPClient implements info.kgeorgiy.java.advanced.hello.HelloCl
                         System.out.println(String.format("Send to %s: %s%n", to.toString(), message));
                         socket.receive(response);
                         final String respondMessage = parsePacket(response);
-                        if (matches(requestNumber, threadNumber, respondMessage)) {
+                        if (responseMatches(requestNumber, threadNumber, respondMessage)) {
                             System.out.println(String.format("Text of response: %s%n", respondMessage));
                             break;
                         }
