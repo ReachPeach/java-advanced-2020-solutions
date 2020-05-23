@@ -10,6 +10,9 @@ import java.util.concurrent.TimeUnit;
 import static ru.ifmo.rain.busyuk.hello.HelloUDPUtils.*;
 
 public class HelloUDPClient implements info.kgeorgiy.java.advanced.hello.HelloClient {
+    private final static int TIMEOUT_DELAY = 100;
+    private final static int AWAIT_TERMINATION_COEFFICIENT = 10;
+
     private void send(final SocketAddress to, final String prefix, final int requests, final int threadIndex) {
         try (DatagramSocket socket = new DatagramSocket()) {
             socket.setSoTimeout(TIMEOUT_DELAY);
