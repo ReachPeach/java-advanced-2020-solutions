@@ -1,9 +1,6 @@
 package ru.ifmo.rain.busyuk.bank.client;
 
 
-import ru.ifmo.rain.busyuk.bank.common.Account;
-import ru.ifmo.rain.busyuk.bank.common.Bank;
-import ru.ifmo.rain.busyuk.bank.common.Person;
 import ru.ifmo.rain.busyuk.bank.server.Server;
 
 import java.rmi.NotBoundException;
@@ -32,7 +29,8 @@ public class Client {
             System.err.println("Incorrect format of money changing!");
             return;
         }
-        System.out.println(name + " " + surname + " " + passport + " " + accountId + " " + delta);
+        System.out.println("request: name <" + name + ">, surname <" + surname + ">, passport <" + passport + ">, " +
+                "account id <" + accountId + ">, adding <" + delta + "> money");
         Bank bank;
         try {
             bank = (Bank) Server.registry.lookup("//localhost/bank");
@@ -61,6 +59,7 @@ public class Client {
             try {
                 if (!person.getName().equals(name) || !person.getSurname().equals(surname)) {
                     System.err.println("Person with this passport already registered");
+                    return;
                 }
             } catch (RemoteException e) {
                 System.err.println("Can't remote person!");

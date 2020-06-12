@@ -1,10 +1,6 @@
 package ru.ifmo.rain.busyuk.bank.client;
 
-import ru.ifmo.rain.busyuk.bank.common.Person;
-
-import java.rmi.RemoteException;
 import java.util.Map;
-import java.util.Set;
 
 public class LocalPerson implements Person {
     private String name;
@@ -20,24 +16,21 @@ public class LocalPerson implements Person {
     }
 
     @Override
-    public String getName() throws RemoteException {
+    public String getName() {
         return name;
     }
 
     @Override
-    public String getSurname() throws RemoteException {
+    public String getSurname() {
         return surname;
     }
 
     @Override
-    public String getPassport() throws RemoteException {
+    public String getPassport() {
         return passport;
     }
 
-    public Set<String> getAccounts() {
-        return accountMap.keySet();
-    }
-
+    @Override
     public LocalAccount getAccount(final String id) {
         return accountMap.get(id);
     }

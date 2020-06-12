@@ -1,7 +1,5 @@
 package ru.ifmo.rain.busyuk.bank.client;
 
-import ru.ifmo.rain.busyuk.bank.common.Account;
-
 public class RemoteAccount implements Account {
     private final String id;
     private int amount;
@@ -11,7 +9,7 @@ public class RemoteAccount implements Account {
         amount = 0;
     }
 
-    public String getId() {
+    public synchronized String getId() {
         return id;
     }
 
@@ -23,3 +21,4 @@ public class RemoteAccount implements Account {
         this.amount = amount;
     }
 }
+
