@@ -20,6 +20,7 @@ public class Server {
         }
     }
 
+
     public static void main(final String... args) {
         final Bank bank = new RemoteBank(PORT);
         try {
@@ -33,4 +34,5 @@ public class Server {
         }
         System.out.println("Server started");
     }
+
 }

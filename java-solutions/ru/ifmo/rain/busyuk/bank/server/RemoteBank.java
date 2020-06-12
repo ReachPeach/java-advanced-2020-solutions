@@ -10,9 +10,7 @@ import ru.ifmo.rain.busyuk.bank.common.Person;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -45,7 +43,7 @@ public class RemoteBank implements Bank {
     }
 
     public Person registerPerson(final String name, final String surname, final String passport) throws RemoteException {
-        Person newPerson = new RemotePerson(name, surname, passport);
+        Person newPerson = new RemotePerson(name, surname, passport, this);
         System.out.println("Creating person " + name + " " + surname + " " + passport);
         if (persons.putIfAbsent(newPerson.getPassport(), newPerson) == null) {
             passportAccounts.put(newPerson.getPassport(), new ConcurrentSkipListSet<>());
@@ -63,13 +61,21 @@ public class RemoteBank implements Bank {
     public Person getLocalPerson(final String passport) throws RemoteException {
         Person person = persons.get(passport);
         Map<String, LocalAccount> personAccounts = new HashMap<>();
+        List<RemoteException> exceptionList = new ArrayList<>();
         passportAccounts.get(person.getPassport()).forEach(id -> {
             try {
                 personAccounts.put(id, new LocalAccount(id, accounts.get(passport + ":" + id).getAmount()));
             } catch (RemoteException e) {
-                System.out.println("crating local acoount failed." + e.getMessage());
+                exceptionList.add(e);
             }
         });
+        if (!exceptionList.isEmpty()) {
+            RemoteException exception = exceptionList.remove(0);
+            exceptionList.forEach(exception::addSuppressed);
+            System.out.println("crating local acoount failed. " + exception.getMessage());
+            throw exception;
+        }
         return new LocalPerson(person.getName(), person.getSurname(), person.getPassport(), personAccounts);
     }
+
 }
