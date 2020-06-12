@@ -1,3 +1,3 @@
 cd ..\..\..\..\..\..
-set src="ru\ifmo\rain\busyuk\bank"
-java -cp %src%\build ru.ifmo.rain.busyuk.bank.client.Client @ma ma ma ma 100000
+set src="java-solutions\ru\ifmo\rain\busyuk\bank"
+java -cp %src%\build ru.ifmo.rain.busyuk.bank.client.Client @%1 %2 %3 %4 %5
