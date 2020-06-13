@@ -8,10 +8,12 @@ import ru.ifmo.rain.busyuk.bank.server.Server;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 
 public class Client {
     public static void main(String[] args) {
-        if (args.length < 5 || args.length > 6) {
+        if (args.length != 5) {
             System.err.println("Incorrect count of arguments!");
             return;
         }
@@ -36,7 +38,8 @@ public class Client {
                 "account id <" + accountId + ">, adding <" + delta + "> money");
         Bank bank;
         try {
-            bank = (Bank) Server.registry.lookup("//localhost/bank");
+            Registry registry = LocateRegistry.getRegistry(Registry.REGISTRY_PORT);
+            bank = (Bank) registry.lookup("//localhost/bank");
         } catch (final NotBoundException e) {
             System.out.println("Bank is not bound");
             return;

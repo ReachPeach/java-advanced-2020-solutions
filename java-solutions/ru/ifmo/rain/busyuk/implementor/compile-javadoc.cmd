@@ -1,7 +1,4 @@
-cd ../../../../../../
+set kgeorgiyModulesClassesPath="../../../../../../../java-advanced-2020/modules/info.kgeorgiy.java.advanced.implementor/info/kgeorgiy/java/advanced/implementor"
+set standardApiLink="https://docs.oracle.com/en/java/javase/11/docs/api"
 
-set res_out=./java-solutions/ru/ifmo/rain/busyuk/implementor/_javadoc
-set modulepath=../java-advanced-2020/lib/
-set sourcepath=./java-solutions/ru/ifmo/rain/busyuk/implementor/*.java
-
-javadoc %sourcepath% -d %res_out% -p %modulepath% -private -link https://docs.oracle.com/en/java/javase/11/docs/api
+javadoc JarImplementor.java Implementor.java -d _javadoc -link %standardApiLink% -private -author -version %kgeorgiyModulesClassesPath%/JarImpler.java %kgeorgiyModulesClassesPath%/Impler.java %kgeorgiyModulesClassesPath%/ImplerException.java

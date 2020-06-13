@@ -3,8 +3,8 @@ package ru.ifmo.rain.busyuk.bank.tests;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import ru.ifmo.rain.busyuk.bank.client.LocalPerson;
-import ru.ifmo.rain.busyuk.bank.client.RemotePerson;
+import ru.ifmo.rain.busyuk.bank.server.LocalPerson;
+import ru.ifmo.rain.busyuk.bank.server.RemotePerson;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;

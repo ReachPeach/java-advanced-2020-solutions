@@ -9,16 +9,20 @@ import ru.ifmo.rain.busyuk.bank.server.Server;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 
 public class Base {
     protected static Bank bank;
     protected static long testStart, testsStart;
     protected static final int personTestCount = 200, requestsTestCount = 1000, accountsTestCount = 150;
+    protected static Registry registry;
 
     @BeforeAll
     static void beforeAll() throws RemoteException, NotBoundException {
         Server.main();
-        bank = (Bank) Server.registry.lookup("//localhost/bank");
+        registry = LocateRegistry.getRegistry(Registry.REGISTRY_PORT);
+        bank = (Bank) registry.lookup("//localhost/bank");
         testsStart = System.currentTimeMillis();
     }
 
@@ -34,7 +38,7 @@ public class Base {
 
     @AfterAll
     static void afterAll() throws RemoteException, NotBoundException {
-        Server.registry.rebind("//localhost/bank", bank);
+        registry.unbind("//localhost/bank");
         System.out.println("Base tests done in " + (System.currentTimeMillis() - testsStart) + "ms");
     }
 

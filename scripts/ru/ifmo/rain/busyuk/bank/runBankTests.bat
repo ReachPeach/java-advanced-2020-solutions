@@ -1,3 +1,4 @@
+cd %~dp0
 cd ..\..\..\..\..\..\
 set junit="lib\*"
 set src="java-solutions\ru\ifmo\rain\busyuk\bank"

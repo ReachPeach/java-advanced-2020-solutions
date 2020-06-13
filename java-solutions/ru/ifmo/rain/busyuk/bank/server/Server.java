@@ -10,7 +10,7 @@ import java.rmi.server.UnicastRemoteObject;
 
 public class Server {
     private final static int PORT = 8888;
-    public static Registry registry;
+    private static Registry registry;
 
     static {
         try {

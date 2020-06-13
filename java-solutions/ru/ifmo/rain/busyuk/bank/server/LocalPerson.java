@@ -1,16 +1,17 @@
-package ru.ifmo.rain.busyuk.bank.client;
+package ru.ifmo.rain.busyuk.bank.server;
 
+import ru.ifmo.rain.busyuk.bank.common.Account;
 import ru.ifmo.rain.busyuk.bank.common.Person;
 
 import java.util.Map;
 
 public class LocalPerson implements Person {
-    private String name;
-    private String surname;
-    private String passport;
-    private Map<String, LocalAccount> accountMap;
+    private final String name;
+    private final String surname;
+    private final String passport;
+    private final Map<String, RemoteAccount> accountMap;
 
-    public LocalPerson(String name, String surname, String passport, Map<String, LocalAccount> accountMap) {
+    public LocalPerson(String name, String surname, String passport, Map<String, RemoteAccount> accountMap) {
         this.name = name;
         this.surname = surname;
         this.passport = passport;
@@ -33,7 +34,7 @@ public class LocalPerson implements Person {
     }
 
     @Override
-    public LocalAccount getAccount(final String id) {
+    public Account getAccount(final String id) {
         return accountMap.get(id);
     }
 }

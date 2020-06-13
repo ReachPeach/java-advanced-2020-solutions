@@ -1,4 +1,4 @@
-package ru.ifmo.rain.busyuk.bank.client;
+package ru.ifmo.rain.busyuk.bank.server;
 
 import ru.ifmo.rain.busyuk.bank.common.Account;
 import ru.ifmo.rain.busyuk.bank.common.Bank;
@@ -9,10 +9,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RemotePerson implements Person {
-    private String name;
-    private String surname;
-    private String passport;
-    private Bank bank;
+    private final String name;
+    private final String surname;
+    private final String passport;
+    private final Bank bank;
     private Map<String, RemoteAccount> accountMap;
 
     public RemotePerson(String name, String surname, String passport, Bank bank) {

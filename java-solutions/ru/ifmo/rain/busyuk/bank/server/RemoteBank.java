@@ -1,9 +1,5 @@
 package ru.ifmo.rain.busyuk.bank.server;
 
-import ru.ifmo.rain.busyuk.bank.client.LocalAccount;
-import ru.ifmo.rain.busyuk.bank.client.LocalPerson;
-import ru.ifmo.rain.busyuk.bank.client.RemoteAccount;
-import ru.ifmo.rain.busyuk.bank.client.RemotePerson;
 import ru.ifmo.rain.busyuk.bank.common.Account;
 import ru.ifmo.rain.busyuk.bank.common.Bank;
 import ru.ifmo.rain.busyuk.bank.common.Person;
@@ -60,11 +56,11 @@ public class RemoteBank implements Bank {
 
     public Person getLocalPerson(final String passport) throws RemoteException {
         Person person = persons.get(passport);
-        Map<String, LocalAccount> personAccounts = new HashMap<>();
+        Map<String, RemoteAccount> personAccounts = new HashMap<>();
         List<RemoteException> exceptionList = new ArrayList<>();
         passportAccounts.get(person.getPassport()).forEach(id -> {
             try {
-                personAccounts.put(id, new LocalAccount(id, accounts.get(passport + ":" + id).getAmount()));
+                personAccounts.put(id, new RemoteAccount(accounts.get(passport + ":" + id)));
             } catch (RemoteException e) {
                 exceptionList.add(e);
             }
