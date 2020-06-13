@@ -57,20 +57,9 @@ public class RemoteBank implements Bank {
     public Person getLocalPerson(final String passport) throws RemoteException {
         Person person = persons.get(passport);
         Map<String, RemoteAccount> personAccounts = new HashMap<>();
-        List<RemoteException> exceptionList = new ArrayList<>();
         passportAccounts.get(person.getPassport()).forEach(id -> {
-            try {
-                personAccounts.put(id, new RemoteAccount(accounts.get(passport + ":" + id)));
-            } catch (RemoteException e) {
-                exceptionList.add(e);
-            }
+            personAccounts.put(id, (RemoteAccount) (accounts.get(passport + ":" + id)));
         });
-        if (!exceptionList.isEmpty()) {
-            RemoteException exception = exceptionList.remove(0);
-            exceptionList.forEach(exception::addSuppressed);
-            System.out.println("crating local acoount failed. " + exception.getMessage());
-            throw exception;
-        }
         return new LocalPerson(person.getName(), person.getSurname(), person.getPassport(), personAccounts);
     }
 
