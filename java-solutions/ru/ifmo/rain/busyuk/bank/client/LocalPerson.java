@@ -1,5 +1,7 @@
 package ru.ifmo.rain.busyuk.bank.client;
 
+import ru.ifmo.rain.busyuk.bank.common.Person;
+
 import java.util.Map;
 
 public class LocalPerson implements Person {

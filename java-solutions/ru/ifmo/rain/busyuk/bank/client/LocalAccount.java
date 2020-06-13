@@ -1,5 +1,7 @@
 package ru.ifmo.rain.busyuk.bank.client;
 
+import ru.ifmo.rain.busyuk.bank.common.Account;
+
 public class LocalAccount implements Account {
     private String id;
     private int amount;

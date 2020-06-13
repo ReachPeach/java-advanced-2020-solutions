@@ -1,5 +1,9 @@
 package ru.ifmo.rain.busyuk.bank.client;
 
+import ru.ifmo.rain.busyuk.bank.common.Account;
+import ru.ifmo.rain.busyuk.bank.common.Bank;
+import ru.ifmo.rain.busyuk.bank.common.Person;
+
 import java.rmi.RemoteException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

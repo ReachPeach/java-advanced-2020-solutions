@@ -1,5 +1,7 @@
 package ru.ifmo.rain.busyuk.bank.client;
 
+import ru.ifmo.rain.busyuk.bank.common.Account;
+
 public class RemoteAccount implements Account {
     private final String id;
     private int amount;

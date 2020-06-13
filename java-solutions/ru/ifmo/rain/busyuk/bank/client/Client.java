@@ -1,6 +1,9 @@
 package ru.ifmo.rain.busyuk.bank.client;
 
 
+import ru.ifmo.rain.busyuk.bank.common.Account;
+import ru.ifmo.rain.busyuk.bank.common.Bank;
+import ru.ifmo.rain.busyuk.bank.common.Person;
 import ru.ifmo.rain.busyuk.bank.server.Server;
 
 import java.rmi.NotBoundException;
