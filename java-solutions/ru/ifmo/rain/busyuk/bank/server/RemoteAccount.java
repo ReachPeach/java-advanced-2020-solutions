@@ -22,11 +22,11 @@ public class RemoteAccount implements Account {
         return id;
     }
 
-    public synchronized int getAmount() {
+    public int getAmount() {
         return amount;
     }
 
-    public synchronized void setAmount(final int amount) {
+    public void setAmount(final int amount) {
         this.amount = amount;
     }
 }
