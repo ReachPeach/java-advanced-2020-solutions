@@ -12,6 +12,59 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
 public class Client {
+    private static void run(String name, String surname, String passport, String accountId, int delta) throws CLientException {
+
+        System.out.println("request: name <" + name + ">, surname <" + surname + ">, passport <" + passport + ">, " +
+                "account id <" + accountId + ">, adding <" + delta + "> money");
+        Bank bank;
+        try {
+            Registry registry = LocateRegistry.getRegistry(Registry.REGISTRY_PORT);
+            bank = (Bank) registry.lookup("//localhost/bank");
+        } catch (final NotBoundException e) {
+            throw new CLientException("Bank is not bound", e);
+        } catch (RemoteException e) {
+            throw new CLientException("Bunk is unreachable");
+        }
+        Person person;
+        try {
+            person = bank.getRemotePerson(passport);
+        } catch (RemoteException e) {
+            throw new CLientException("Can't remote person!");
+        }
+        if (person == null) {
+            try {
+                person = bank.registerPerson(name, surname, passport);
+            } catch (RemoteException e) {
+                throw new CLientException("Can't save a new person with passport " + passport);
+            }
+        }
+
+        Account account;
+        try {
+            account = bank.getAccount(person, accountId);
+        } catch (RemoteException e) {
+            throw new CLientException("Can't remote person's account!");
+        }
+        if (account == null) {
+            try {
+                account = bank.createAccount(person, accountId);
+            } catch (RemoteException e) {
+                throw new CLientException("Can't save a new person's account with passport <" + passport + ">, id <" + accountId + ">");
+            }
+        }
+        try {
+            System.out.println("Account value: " + account.getAmount());
+            System.out.println("Changing...");
+            account.setAmount(account.getAmount() + delta);
+            System.out.println("Operation done. Checking account...");
+            System.out.println("Value in bank: " + bank.getAccount(person, accountId).getAmount());
+            System.out.println("Value in person: " + account.getAmount());
+        } catch (RemoteException e) {
+            throw new CLientException("Can't reach the bank", e);
+        }
+    }
+
+
     public static void main(String[] args) {
         if (args.length != 5) {
             System.err.println("Incorrect count of arguments!");
@@ -34,68 +87,11 @@ public class Client {
             System.err.println("Incorrect format of money changing!");
             return;
         }
-        System.out.println("request: name <" + name + ">, surname <" + surname + ">, passport <" + passport + ">, " +
-                "account id <" + accountId + ">, adding <" + delta + "> money");
-        Bank bank;
-        try {
-            Registry registry = LocateRegistry.getRegistry(Registry.REGISTRY_PORT);
-            bank = (Bank) registry.lookup("//localhost/bank");
-        } catch (final NotBoundException e) {
-            System.out.println("Bank is not bound");
-            return;
-        } catch (RemoteException e) {
-            System.out.println("Bunk is unreachable");
-            return;
-        }
-        Person person;
-        try {
-            person = bank.getRemotePerson(passport);
-        } catch (RemoteException e) {
-            System.err.println("Can't remote person!");
-            return;
-        }
-        if (person == null) {
-            try {
-                person = bank.registerPerson(name, surname, passport);
-            } catch (RemoteException e) {
-                System.err.println("Can't save a new person with passport " + passport);
-                return;
-            }
-        } else
-            try {
-                if (!person.getName().equals(name) || !person.getSurname().equals(surname)) {
-                    System.err.println("Person with this passport already registered");
-                    return;
-                }
-            } catch (RemoteException e) {
-                System.err.println("Can't remote person!");
-                return;
-            }
 
-        Account account;
         try {
-            account = bank.getAccount(person, accountId);
-        } catch (RemoteException e) {
-            System.err.println("Can't remote person's account!");
-            return;
-        }
-        if (account == null) {
-            try {
-                account = bank.createAccount(person, accountId);
-            } catch (RemoteException e) {
-                System.err.println("Can't save a new person's account with passport <" + passport + ">, id <" + accountId + ">");
-                return;
-            }
-        }
-        try {
-            System.out.println("Account value: " + account.getAmount());
-            System.out.println("Changing...");
-            account.setAmount(account.getAmount() + delta);
-            System.out.println("Operation done. Checking account...");
-            System.out.println("Value in bank: " + bank.getAccount(person, accountId).getAmount());
-            System.out.println("Value in person: " + account.getAmount());
-        } catch (RemoteException e) {
-            e.printStackTrace();
+            run(name, surname, passport, accountId, delta);
+        } catch (CLientException e) {
+            System.err.println(e.getMessage());
         }
     }
 }

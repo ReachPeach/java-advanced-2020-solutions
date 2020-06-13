@@ -40,6 +40,11 @@ public class RemoteBank implements Bank {
 
     public Person registerPerson(final String name, final String surname, final String passport) throws RemoteException {
         Person newPerson = new RemotePerson(name, surname, passport, this);
+        Person person = getRemotePerson(passport);
+        if (!person.getName().equals(name) || !person.getSurname().equals(surname)) {
+            System.err.println("Person with this passport already registered");
+            return null;
+        }
         System.out.println("Creating person " + name + " " + surname + " " + passport);
         if (persons.putIfAbsent(newPerson.getPassport(), newPerson) == null) {
             passportAccounts.put(newPerson.getPassport(), new ConcurrentSkipListSet<>());
