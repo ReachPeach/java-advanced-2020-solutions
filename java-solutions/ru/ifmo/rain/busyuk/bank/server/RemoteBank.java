@@ -56,10 +56,21 @@ public class RemoteBank implements Bank {
 
     public Person getLocalPerson(final String passport) throws RemoteException {
         Person person = persons.get(passport);
+        List<RemoteException> exceptionList = new ArrayList<>();
         Map<String, RemoteAccount> personAccounts = new HashMap<>();
-        passportAccounts.get(person.getPassport()).forEach(id -> {
-            personAccounts.put(id, (RemoteAccount) (accounts.get(passport + ":" + id)));
-        });
+        for (String id : passportAccounts.get(person.getPassport())) {
+            try {
+                personAccounts.put(id,
+                        (new RemoteAccount(accounts.get(passport + ":" + id))));
+            } catch (RemoteException e) {
+                exceptionList.add(e);
+            }
+        }
+        if (!exceptionList.isEmpty()) {
+            RemoteException remoteException = exceptionList.get(0);
+            exceptionList.stream().skip(1).forEach(remoteException::addSuppressed);
+            throw remoteException;
+        }
         return new LocalPerson(person.getName(), person.getSurname(), person.getPassport(), personAccounts);
     }
 

@@ -2,6 +2,8 @@ package ru.ifmo.rain.busyuk.bank.server;
 
 import ru.ifmo.rain.busyuk.bank.common.Account;
 
+import java.rmi.RemoteException;
+
 public class RemoteAccount implements Account {
     private final String id;
     private volatile int amount;
@@ -9,6 +11,11 @@ public class RemoteAccount implements Account {
     public RemoteAccount(final String id) {
         this.id = id;
         amount = 0;
+    }
+
+    protected RemoteAccount(final Account other) throws RemoteException {
+        this.id = other.getId();
+        this.amount = other.getAmount();
     }
 
     public String getId() {
