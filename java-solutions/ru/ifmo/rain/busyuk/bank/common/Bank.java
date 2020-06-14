@@ -29,7 +29,7 @@ public interface Bank extends Remote {
      * @param name     person name
      * @param surname  person surname
      * @param passport person passport
-     * @return registered or existing person.
+     * @return registered or existing person or {@code null} if person with same passport already exists.
      */
     Person registerPerson(String name, String surname, String passport) throws RemoteException;
 

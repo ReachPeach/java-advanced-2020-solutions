@@ -1,4 +1,3 @@
 cd %~dp0
-cd ..\..\..\..\..\..\
-set src="java-solutions\ru\ifmo\rain\busyuk\bank"
-java -cp %src%\build ru.ifmo.rain.busyuk.bank.server.Server
+cd ..\..\..\..\..\..\"
+java -cp build ru.ifmo.rain.busyuk.bank.server.Server

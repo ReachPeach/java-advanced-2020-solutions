@@ -1,10 +1,8 @@
 package ru.ifmo.rain.busyuk.bank.client;
 
-
 import ru.ifmo.rain.busyuk.bank.common.Account;
 import ru.ifmo.rain.busyuk.bank.common.Bank;
 import ru.ifmo.rain.busyuk.bank.common.Person;
-import ru.ifmo.rain.busyuk.bank.server.Server;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -12,46 +10,37 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
 public class Client {
-    private static void run(String name, String surname, String passport, String accountId, int delta) throws CLientException {
-
-        System.out.println("request: name <" + name + ">, surname <" + surname + ">, passport <" + passport + ">, " +
+    private static void run(String name, String surname, String passport, String accountId, int delta) throws ClientException {
+        System.out.println("Request: name <" + name + ">, surname <" + surname + ">, passport <" + passport + ">, " +
                 "account id <" + accountId + ">, adding <" + delta + "> money");
         Bank bank;
         try {
             Registry registry = LocateRegistry.getRegistry(Registry.REGISTRY_PORT);
             bank = (Bank) registry.lookup("//localhost/bank");
         } catch (final NotBoundException e) {
-            throw new CLientException("Bank is not bound", e);
+            throw new ClientException("Bank is not bound", e);
         } catch (RemoteException e) {
-            throw new CLientException("Bunk is unreachable");
+            throw new ClientException("Bunk is unreachable", e);
         }
+
         Person person;
         try {
-            person = bank.getRemotePerson(passport);
+            person = bank.registerPerson(name, surname, passport);
         } catch (RemoteException e) {
-            throw new CLientException("Can't remote person!");
+            throw new ClientException("Can't save a new person with passport " + passport, e);
         }
         if (person == null) {
-            try {
-                person = bank.registerPerson(name, surname, passport);
-            } catch (RemoteException e) {
-                throw new CLientException("Can't save a new person with passport " + passport);
-            }
+            throw new ClientException("Person with passport <" + passport + "> already registered.");
         }
 
         Account account;
         try {
-            account = bank.getAccount(person, accountId);
+            account = bank.createAccount(person, accountId);
         } catch (RemoteException e) {
-            throw new CLientException("Can't remote person's account!");
+            throw new ClientException("Can't save a new person's account with passport <" + passport +
+                    ">, id <" + accountId + ">", e);
         }
-        if (account == null) {
-            try {
-                account = bank.createAccount(person, accountId);
-            } catch (RemoteException e) {
-                throw new CLientException("Can't save a new person's account with passport <" + passport + ">, id <" + accountId + ">");
-            }
-        }
+
         try {
             System.out.println("Account value: " + account.getAmount());
             System.out.println("Changing...");
@@ -60,7 +49,7 @@ public class Client {
             System.out.println("Value in bank: " + bank.getAccount(person, accountId).getAmount());
             System.out.println("Value in person: " + account.getAmount());
         } catch (RemoteException e) {
-            throw new CLientException("Can't reach the bank", e);
+            throw new ClientException("Can't reach the bank", e);
         }
     }
 
@@ -90,7 +79,7 @@ public class Client {
 
         try {
             run(name, surname, passport, accountId, delta);
-        } catch (CLientException e) {
+        } catch (ClientException e) {
             System.err.println(e.getMessage());
         }
     }

@@ -15,7 +15,7 @@ import java.rmi.registry.Registry;
 public class Base {
     protected static Bank bank;
     protected static long testStart, testsStart;
-    protected static final int personTestCount = 200, requestsTestCount = 1000, accountsTestCount = 150;
+    protected static final int personTestCount = 100, requestsTestCount = 500, accountsTestCount = 100;
     protected static Registry registry;
 
     @BeforeAll
