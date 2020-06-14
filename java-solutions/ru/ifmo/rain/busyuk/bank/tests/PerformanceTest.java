@@ -3,8 +3,7 @@ package ru.ifmo.rain.busyuk.bank.tests;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import ru.ifmo.rain.busyuk.bank.server.LocalPerson;
-import ru.ifmo.rain.busyuk.bank.server.RemotePerson;
+import ru.ifmo.rain.busyuk.bank.common.Person;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -18,14 +17,27 @@ public class PerformanceTest extends Base {
     @Order(-100)
     @Test
     @DisplayName("0.1_Base test: getting accounts")
-    void AccountsPerformance() throws RemoteException {
+    void AccountsGettingPerformance() throws RemoteException {
         for (int i = 0; i < personTestCount; i++) {
-            bank.createAccount(bank.registerPerson("name", "surname", "01" + i),
+            bank.createAccount(bank.registerPerson("name", "surname", "01" + i).getPassport(),
                     "1").setAmount(100);
         }
         for (int i = 0; i < personTestCount; i++) {
-            assertEquals(bank.getAccount(new RemotePerson("name", "surname", "01" + i,
-                    bank), "1").getAmount(), bank.getRemotePerson("01" + i).getAccount("1").getAmount());
+            assertEquals(bank.getAccount("01" + i, "1").getAmount(), bank.getRemotePerson("01" + i).
+                    getAccount("1").getAmount());
+        }
+    }
+
+    @Order(-100)
+    @Test
+    @DisplayName("0.2_Base test: creating accounts")
+    void AccountsCreatingPerformance() throws RemoteException {
+        for (int i = 0; i < personTestCount; i++) {
+            bank.registerPerson("name", "surname", "01" + i).createAccount("1").setAmount(100);
+        }
+        for (int i = 0; i < personTestCount; i++) {
+            assertEquals(bank.getAccount("01" + i, "1").getAmount(), bank.getRemotePerson("01" + i).
+                    getAccount("1").getAmount());
         }
     }
 
@@ -33,18 +45,18 @@ public class PerformanceTest extends Base {
     @Test
     @DisplayName("2.1_Bank test: Changing account from remote person")
     void RemotePersonChangeTest() throws RemoteException {
-        List<RemotePerson> remotePersonList = new ArrayList<>(Collections.nCopies(personTestCount, null));
+        List<Person> remotePersonList = new ArrayList<>(Collections.nCopies(personTestCount, null));
         for (int i = 0; i < personTestCount; i++) {
-            remotePersonList.set(i, (RemotePerson) bank.registerPerson("pname", "psurname",
+            remotePersonList.set(i, bank.registerPerson("pname", "psurname",
                     "21" + i));
             for (int j = 0; j < 3; j++) {
-                bank.createAccount(bank.getRemotePerson("21" + i), String.valueOf(j));
+                bank.createAccount("21" + i, String.valueOf(j));
                 remotePersonList.get(i).getAccount(String.valueOf(j)).setAmount(11 * j + i);
             }
         }
         for (int i = 0; i < personTestCount; i++) {
             for (int j = 0; j < 3; j++) {
-                assertEquals(bank.getAccount(bank.getRemotePerson("21" + i), String.valueOf(j)).
+                assertEquals(bank.getAccount("21" + i, String.valueOf(j)).
                         getAmount(), remotePersonList.get(i).getAccount(String.valueOf(j)).getAmount());
             }
         }
@@ -54,18 +66,18 @@ public class PerformanceTest extends Base {
     @Test
     @DisplayName("2.2_Bank test: Changing account from bank")
     void RemoteBankChangeTest() throws RemoteException {
-        List<RemotePerson> remotePersonList = new ArrayList<>(Collections.nCopies(personTestCount, null));
+        List<Person> remotePersonList = new ArrayList<>(Collections.nCopies(personTestCount, null));
         for (int i = 0; i < personTestCount; i++) {
-            remotePersonList.set(i, (RemotePerson) bank.registerPerson("pname",
+            remotePersonList.set(i, bank.registerPerson("pname",
                     "psurname", "22" + i));
             for (int j = 0; j < 3; j++) {
-                bank.createAccount(bank.getRemotePerson("22" + i), String.valueOf(j)).setAmount(10 * i + j);
-                bank.getAccount(bank.getRemotePerson("22" + i), String.valueOf(j)).setAmount(10 * (10 * i + j));
+                bank.createAccount("22" + i, String.valueOf(j)).setAmount(10 * i + j);
+                bank.getAccount("22" + i, String.valueOf(j)).setAmount(10 * (10 * i + j));
             }
         }
         for (int i = 0; i < personTestCount; i++) {
             for (int j = 0; j < 3; j++) {
-                assertEquals(bank.getAccount(bank.getRemotePerson("22" + i), String.valueOf(j)).
+                assertEquals(bank.getAccount("22" + i, String.valueOf(j)).
                         getAmount(), remotePersonList.get(i).getAccount(String.valueOf(j)).getAmount());
             }
         }
@@ -75,12 +87,12 @@ public class PerformanceTest extends Base {
     @Test
     @DisplayName("2.3_Bank test: Getting local person")
     void LocalPersonSave() throws RemoteException {
-        List<LocalPerson> localPersons = new ArrayList<>(Collections.nCopies(personTestCount, null));
+        List<Person> localPersons = new ArrayList<>(Collections.nCopies(personTestCount, null));
         for (int i = 0; i < personTestCount; i++) {
             for (int j = 0; j < personTestCount / 20; j++) {
-                bank.createAccount(bank.registerPerson("pname", "psurname", "23" + i),
+                bank.createAccount(bank.registerPerson("pname", "psurname", "23" + i).getPassport(),
                         String.valueOf(j)).setAmount(78 * j);
-                localPersons.set(i, (LocalPerson) bank.getLocalPerson("23" + i));
+                localPersons.set(i, bank.getLocalPerson("23" + i));
             }
         }
         for (int i = 0; i < personTestCount; i++) {
@@ -95,15 +107,15 @@ public class PerformanceTest extends Base {
     @Test
     @DisplayName("2.4_Bank test: Local person changes")
     void LocalPersonChange() throws RemoteException {
-        List<LocalPerson> localPersons = new ArrayList<>(Collections.nCopies(personTestCount, null));
+        List<Person> localPersons = new ArrayList<>(Collections.nCopies(personTestCount, null));
         for (int i = 0; i < personTestCount; i++) {
             for (int j = 0; j < personTestCount / 20; j++) {
-                bank.createAccount(bank.registerPerson("pname", "psurname", "24" + i),
+                bank.createAccount(bank.registerPerson("pname", "psurname", "24" + i).getPassport(),
                         String.valueOf(j)).setAmount(78 * j);
-                localPersons.set(i, (LocalPerson) bank.getLocalPerson("24" + i));
+                localPersons.set(i, bank.getLocalPerson("24" + i));
             }
         }
-        for (LocalPerson localPerson : localPersons) {
+        for (Person localPerson : localPersons) {
             for (int j = 0; j < personTestCount / 20; j++) {
                 localPerson.getAccount(String.valueOf(j)).setAmount(78 * j + 11);
             }
@@ -111,7 +123,7 @@ public class PerformanceTest extends Base {
         for (int i = 0; i < personTestCount; i++) {
             for (int j = 0; j < personTestCount / 20; j++) {
                 assertNotEquals(localPersons.get(i).getAccount(String.valueOf(j)).getAmount(),
-                        bank.getAccount(bank.getRemotePerson("24" + i), String.valueOf(j)).getAmount());
+                        bank.getAccount("24" + i, String.valueOf(j)).getAmount());
             }
         }
     }
@@ -120,23 +132,23 @@ public class PerformanceTest extends Base {
     @Test
     @DisplayName("2.5_Bank test: chenging in bank not in local person")
     void LocalPersonDontChange() throws RemoteException {
-        List<LocalPerson> localPersons = new ArrayList<>(Collections.nCopies(personTestCount, null));
+        List<Person> localPersons = new ArrayList<>(Collections.nCopies(personTestCount, null));
         for (int i = 0; i < personTestCount; i++) {
             for (int j = 0; j < personTestCount / 20; j++) {
-                bank.createAccount(bank.registerPerson("pname", "psurname", "25" + i),
+                bank.createAccount(bank.registerPerson("pname", "psurname", "25" + i).getPassport(),
                         String.valueOf(j)).setAmount(78 * j);
-                localPersons.set(i, (LocalPerson) bank.getLocalPerson("25" + i));
+                localPersons.set(i, bank.getLocalPerson("25" + i));
             }
         }
         for (int i = 0; i < personTestCount; i++) {
             for (int j = 0; j < personTestCount / 20; j++) {
-                bank.getAccount(bank.getRemotePerson("25" + i), String.valueOf(j)).setAmount(89 * j + 5);
+                bank.getAccount("25" + i, String.valueOf(j)).setAmount(89 * j + 5);
             }
         }
         for (int i = 0; i < personTestCount; i++) {
             for (int j = 0; j < personTestCount / 20; j++) {
                 assertNotEquals(localPersons.get(i).getAccount(String.valueOf(j)).getAmount(),
-                        bank.getAccount(bank.getRemotePerson("25" + i), String.valueOf(j)).getAmount());
+                        bank.getAccount("25" + i, String.valueOf(j)).getAmount());
             }
         }
     }
@@ -145,13 +157,13 @@ public class PerformanceTest extends Base {
     @Test
     @DisplayName("2.6_Bank test: multiple changing from different copies of remote person")
     void RemotePersonPerformance() throws RemoteException {
-        List<RemotePerson> remotePersonList = new ArrayList<>(Collections.nCopies(personTestCount, null));
+        List<Person> remotePersonList = new ArrayList<>(Collections.nCopies(personTestCount, null));
         bank.registerPerson("pname", "psurname", "260");
         for (int i = 0; i < accountsTestCount; i++) {
-            bank.createAccount(bank.getRemotePerson("260"), String.valueOf(i)).setAmount(11 * i);
+            bank.createAccount("260", String.valueOf(i)).setAmount(11 * i);
         }
         for (int i = 0; i < personTestCount; i++) {
-            remotePersonList.set(i, (RemotePerson) bank.getRemotePerson("260"));
+            remotePersonList.set(i, bank.getRemotePerson("260"));
         }
         for (int i = 0; i < personTestCount; i++) {
             for (int j = 0; j < accountsTestCount / 10; j++) {
@@ -162,7 +174,7 @@ public class PerformanceTest extends Base {
 
         for (int i = 0; i < personTestCount; i++) {
             for (int j = 0; j < accountsTestCount; j++) {
-                assertEquals(bank.getAccount(bank.getRemotePerson("260"), String.valueOf(j)).getAmount(),
+                assertEquals(bank.getAccount("260", String.valueOf(j)).getAmount(),
                         remotePersonList.get(i).getAccount(String.valueOf(j)).getAmount());
             }
         }

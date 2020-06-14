@@ -37,4 +37,13 @@ public class LocalPerson implements Person {
     public Account getAccount(final String id) {
         return accountMap.get(id);
     }
+
+    @Override
+    public Account createAccount(String id) {
+        if (accountMap.containsKey(id)) {
+            return accountMap.get(id);
+        } else {
+            return accountMap.put(id, new RemoteAccount(id));
+        }
+    }
 }

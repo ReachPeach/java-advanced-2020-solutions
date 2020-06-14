@@ -27,4 +27,12 @@ public interface Person extends Serializable, Remote {
      * @return account with specified identifier  or {@code null} if such account does not exists.
      */
     Account getAccount(String id) throws RemoteException;
+
+    /**
+     * Creates a new account with specified identifier if it is not already exists.
+     *
+     * @param id account id
+     * @return created or existing account.
+     */
+    Account createAccount(String id) throws RemoteException;
 }

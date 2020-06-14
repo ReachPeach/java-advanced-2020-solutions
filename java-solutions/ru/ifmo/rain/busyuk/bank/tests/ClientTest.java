@@ -70,7 +70,7 @@ public class ClientTest extends Base {
         }
         for (int i = 0; i < personTestCount; i++) {
             for (int j = 0; j < 5; j++) {
-                assertEquals(ans.get(i).get(j), bank.getAccount(bank.getRemotePerson("14" + i),
+                assertEquals(ans.get(i).get(j), bank.getAccount(bank.getRemotePerson("14" + i).getPassport(),
                         String.valueOf(j)).getAmount());
             }
         }

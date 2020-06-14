@@ -41,10 +41,18 @@ public class RemotePerson implements Person {
     @Override
     public Account getAccount(String id) throws RemoteException {
         if (!accountMap.containsKey(id)) {
-            RemoteAccount account = (RemoteAccount) bank.getAccount(this, id);
+            RemoteAccount account = (RemoteAccount) bank.getAccount(passport, id);
             if (account != null) {
                 accountMap.put(id, account);
             }
+        }
+        return accountMap.get(id);
+    }
+
+    @Override
+    public Account createAccount(String id) throws RemoteException {
+        if (!accountMap.containsKey(id)) {
+            accountMap.put(id, (RemoteAccount) bank.createAccount(passport, id));
         }
         return accountMap.get(id);
     }

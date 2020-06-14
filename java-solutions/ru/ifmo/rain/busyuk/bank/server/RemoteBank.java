@@ -32,29 +32,30 @@ public class RemoteBank implements Bank {
         this.port = port;
     }
 
-    public Account createAccount(final Person person, final String id) throws RemoteException {
-        Object[] args = {person, id};
+    public Account createAccount(final String passport, final String id) throws RemoteException {
+        Object[] args = {passport, id};
         if (containsNull(args)) {
             return null;
         }
-        String accountId = person.getPassport() + ':' + id;
+        String accountId = passport + ':' + id;
         System.out.println("Creating account " + accountId);
         Account newAccount = new RemoteAccount(accountId);
-        if (accounts.putIfAbsent(accountId, newAccount) == null) {
+        if (!accounts.containsKey(accountId)) {
             UnicastRemoteObject.exportObject(newAccount, port);
-            passportAccounts.get(person.getPassport()).add(id);
+            accounts.put(accountId, newAccount);
+            passportAccounts.get(passport).add(id);
             return newAccount;
         } else {
-            return getAccount(person, id);
+            return getAccount(passport, id);
         }
     }
 
-    public Account getAccount(final Person person, final String id) throws RemoteException {
-        Object[] args = {person, id};
+    public Account getAccount(final String passport, final String id) throws RemoteException {
+        Object[] args = {passport, id};
         if (containsNull(args)) {
             return null;
         }
-        return accounts.get(person.getPassport() + ":" + id);
+        return accounts.get(passport + ":" + id);
     }
 
     public Person registerPerson(final String name, final String surname, final String passport) throws RemoteException {

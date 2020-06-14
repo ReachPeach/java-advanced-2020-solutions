@@ -35,7 +35,7 @@ public class Client {
 
         Account account;
         try {
-            account = bank.createAccount(person, accountId);
+            account = person.createAccount(accountId);
         } catch (RemoteException e) {
             throw new ClientException("Can't save a new person's account with passport <" + passport +
                     ">, id <" + accountId + ">", e);
@@ -46,7 +46,7 @@ public class Client {
             System.out.println("Changing...");
             account.setAmount(account.getAmount() + delta);
             System.out.println("Operation done. Checking account...");
-            System.out.println("Value in bank: " + bank.getAccount(person, accountId).getAmount());
+            System.out.println("Value in bank: " + bank.getAccount(passport, accountId).getAmount());
             System.out.println("Value in person: " + account.getAmount());
         } catch (RemoteException e) {
             throw new ClientException("Can't reach the bank", e);
