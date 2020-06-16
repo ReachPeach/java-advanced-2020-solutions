@@ -50,7 +50,7 @@ public class RemoteBank implements Bank {
         }
     }
 
-    public Account getAccount(final String passport, final String id) throws RemoteException {
+    public Account getAccount(final String passport, final String id) {
         Object[] args = {passport, id};
         if (containsNull(args)) {
             return null;
