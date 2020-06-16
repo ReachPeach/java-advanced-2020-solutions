@@ -17,7 +17,7 @@ public class Client {
         try {
             Registry registry = LocateRegistry.getRegistry(Registry.REGISTRY_PORT);
             bank = (Bank) registry.lookup("//localhost/bank");
-        } catch (final NotBoundException e) {
+        } catch (NotBoundException e) {
             throw new ClientException("Bank is not bound", e);
         } catch (RemoteException e) {
             throw new ClientException("Bunk is unreachable", e);
