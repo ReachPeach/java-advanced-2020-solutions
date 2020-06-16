@@ -130,7 +130,7 @@ public class PerformanceTest extends Base {
 
     @Order(3000000)
     @Test
-    @DisplayName("2.5_Bank test: chenging in bank not in local person")
+    @DisplayName("2.5_Bank test: Changing in bank not in local person")
     void LocalPersonDontChange() throws RemoteException {
         List<Person> localPersons = new ArrayList<>(Collections.nCopies(personTestCount, null));
         for (int i = 0; i < personTestCount; i++) {

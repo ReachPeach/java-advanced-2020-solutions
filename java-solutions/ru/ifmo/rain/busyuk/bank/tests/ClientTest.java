@@ -78,7 +78,7 @@ public class ClientTest extends Base {
 
     @Order(500)
     @Test
-    @DisplayName("1.5_Client test: multiple passport registration")
+    @DisplayName("1.5_Client test: Multiple passport registration")
     void RegistrationPerformance() throws RemoteException {
         String[] args = {"name", "surname", "15" + 0, "1", "100"};
         Client.main(args);
